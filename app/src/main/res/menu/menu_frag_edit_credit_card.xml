@@ -1,0 +1,22 @@
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools" tools:context=".MainActivity">
+
+<!--    Don't know why android:showAsAction="always" produce an error ...
+    The app compiles and seems to run fine.
+    app:showAsAction="always" does not produce an error ...
+    but the icon does not show in the ActionBar, even though the preview shows it!-->
+    <item android:id="@+id/action_cancel"
+        android:title="Cancel"
+        android:icon="@drawable/ic_action_cancel"
+        android:orderInCategory="910"
+        android:showAsAction="always"/>
+
+    <item android:id="@+id/action_clear"
+        android:title="Clear Entries"
+        android:icon="@drawable/ic_notification_clear_all"
+        android:orderInCategory="900"
+        android:showAsAction="never"/>
+
+
+</menu>

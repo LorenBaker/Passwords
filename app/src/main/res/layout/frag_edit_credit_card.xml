@@ -1,0 +1,218 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:padding="10dp">
+
+    <EditText
+        android:id="@+id/txtItemName"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:inputType="textCapWords"
+        style="@style/txtPasswordStyle"
+        android:hint="Item Name" />
+
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <Spinner
+                android:id="@+id/spnCreditCardType"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_gravity="center">
+
+                <EditText
+                    android:id="@+id/txtCreditCardPart1"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:inputType="number"
+                    android:singleLine="true"
+                    android:gravity="center"
+                    style="@style/txtPasswordStyle" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:gravity="center"
+                    android:text="&#8211;" />
+
+                <EditText
+                    android:id="@+id/txtCreditCardPart2"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:inputType="number"
+                    android:singleLine="true"
+                    android:gravity="center"
+                    style="@style/txtPasswordStyle" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:gravity="center"
+                    android:text="&#8211;" />
+
+                <EditText
+                    android:id="@+id/txtCreditCardPart3"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:inputType="number"
+                    android:singleLine="true"
+                    android:gravity="center"
+                    style="@style/txtPasswordStyle" />
+
+                <TextView
+                    android:id="@+id/tvSpacer3"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:gravity="center"
+                    android:text="&#8211;" />
+
+                <EditText
+                    android:id="@+id/txtCreditCardPart4"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:inputType="number"
+                    android:singleLine="true"
+                    android:gravity="center"
+                    style="@style/txtPasswordStyle"/>
+
+                <ImageView
+                    android:id="@+id/ivCardVerification"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:src="@drawable/btn_check_buttonless_on" />
+
+
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_weight="8"
+                    android:layout_height="wrap_content"
+                    style="@style/tvPasswordStyle"
+                    android:text="Expires:" />
+
+                <EditText
+                    android:id="@+id/txtExpirationMonth"
+                    android:layout_width="0dp"
+                    android:layout_weight="5"
+                    android:layout_height="wrap_content"
+                    android:inputType="number"
+                    android:gravity="right"
+                    style="@style/txtPasswordStyle"
+                    android:hint="Month" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:gravity="center"
+                    android:text="/" />
+                <EditText
+                    android:id="@+id/txtExpirationYear"
+                    android:layout_width="0dp"
+                    android:layout_weight="15"
+                    android:layout_height="wrap_content"
+                    android:inputType="number"
+                    style="@style/txtPasswordStyle"
+                    android:hint="Year" />
+
+
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_weight="8"
+                    android:layout_height="wrap_content"
+                    style="@style/tvPasswordStyle"
+                    android:text="Code:" />
+
+                <EditText
+                    android:id="@+id/txtSecurityCode"
+                    android:layout_width="0dp"
+                    android:layout_weight="20"
+                    android:layout_height="wrap_content"
+                    android:inputType="number"
+                    style="@style/txtPasswordStyle"
+                    android:hint="Security Code" />
+
+
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_weight="8"
+                    android:layout_height="wrap_content"
+                    style="@style/tvPasswordStyle"
+                    android:text="Primary:" />
+
+                <EditText
+                    android:id="@+id/txtPrimaryPhoneNumber"
+                    android:layout_width="0dp"
+                    android:layout_weight="20"
+                    android:layout_height="wrap_content"
+                    android:inputType="phone"
+                    style="@style/txtPasswordStyle"
+                    android:hint="Primary Phone Number" />
+
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_weight="8"
+                    android:layout_height="wrap_content"
+                    style="@style/tvPasswordStyle"
+                    android:text="Alternate:" />
+
+                <EditText
+                    android:id="@+id/txtAlternatePhoneNumber"
+                    android:layout_width="0dp"
+                    android:layout_weight="20"
+                    android:layout_height="wrap_content"
+                    android:inputType="phone"
+                    style="@style/txtPasswordStyle"
+                    android:hint="Alternate Phone Number" />
+
+            </LinearLayout>
+
+        </LinearLayout>
+
+    </ScrollView>
+
+</LinearLayout>
