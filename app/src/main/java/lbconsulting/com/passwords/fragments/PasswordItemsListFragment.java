@@ -57,7 +57,7 @@ public class PasswordItemsListFragment extends Fragment
 
     private int mActiveListView = clsItemTypes.CREDIT_CARDS;
 
-    private int mActiveUserID;
+    //private int mActiveUserID;
     private ArrayList<clsPasswordItem> mAllItems;
     private ArrayList<clsPasswordItem> mAllUserItems;
     private ArrayList<clsPasswordItem> mUserCreditCardItems;
@@ -72,37 +72,26 @@ public class PasswordItemsListFragment extends Fragment
 
     }
 
-    public static PasswordItemsListFragment newInstance(int userID) {
+    public static PasswordItemsListFragment newInstance() {
         PasswordItemsListFragment fragment = new PasswordItemsListFragment();
-        Bundle args = new Bundle();
+/*        Bundle args = new Bundle();
         args.putInt(MySettings.ARG_ACTIVE_USER_ID, userID);
-        fragment.setArguments(args);
+        fragment.setArguments(args);*/
         return fragment;
     }
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
-        Bundle args = getArguments();
-        if (args.containsKey(MySettings.ARG_ACTIVE_USER_ID)) {
-            mActiveUserID = args.getInt(MySettings.ARG_ACTIVE_USER_ID);
-        }
-        MyLog.i("PasswordItemsListFragment", "onCreate() UserID=" + mActiveUserID);
+        MyLog.i("PasswordItemsListFragment", "onCreate()");
         EventBus.getDefault().register(this);
         setHasOptionsMenu(true);
-
     }
 
     @Override
     public void onActivityCreated(@Nullable Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
-
         MyLog.i("PasswordItemsListFragment", "onActivityCreated()");
-/*        if (savedInstanceState != null) {
-            // Restore last state.
-            mActiveListView = savedInstanceState.getInt(MySettings.ARG_ACTIVE_LIST_VIEW, CREDIT_CARDS);
-        }*/
     }
 
 
@@ -141,7 +130,6 @@ public class PasswordItemsListFragment extends Fragment
     }
 
 
-
     public void onEvent(clsEvents.updateUI event) {
         MyLog.i("PasswordItemsListFragment", "onEvent.updateUI()");
         updateUI();
@@ -165,8 +153,12 @@ public class PasswordItemsListFragment extends Fragment
         mUserSoftwareItems = new ArrayList<>();
         mUserWebsiteItems = new ArrayList<>();
 
+        int lastPasswordItemID = -1;
         for (clsPasswordItem item : mAllItems) {
-            if (item.getUser_ID() == mActiveUserID) {
+            if (item.getID() > lastPasswordItemID) {
+                lastPasswordItemID = item.getID();
+            }
+            if (item.getUser_ID() == MySettings.getActiveUserID()) {
                 mAllUserItems.add(item);
                 switch (item.getItemType_ID()) {
                     case clsItemTypes.CREDIT_CARDS:
@@ -187,6 +179,7 @@ public class PasswordItemsListFragment extends Fragment
                 }
             }
         }
+        MainActivity.setLastPasswordItemID(lastPasswordItemID);
     }
 
     private void setArrayAdapters() {
@@ -202,6 +195,7 @@ public class PasswordItemsListFragment extends Fragment
         lvSoftware.setAdapter(userSoftwareItemsAdapter);
         lvWebsites.setAdapter(userWebsiteItemsAdapter);
     }
+
     @Override
     public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
         inflater.inflate(R.menu.menu_frag_password_items_list, menu);
@@ -215,13 +209,40 @@ public class PasswordItemsListFragment extends Fragment
             menu.findItem(R.id.action_show_search).setVisible(true);
         }
     }
+
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         switch (item.getItemId()) {
 
             // Do Fragment menu item stuff here
             case R.id.action_new:
-                Toast.makeText(getActivity(), "TO COME: action_new", Toast.LENGTH_SHORT).show();
+                clsPasswordItem newPasswordItem = MainActivity.createNewPasswordItem();
+
+                if (lvCreditCards.getVisibility() == View.VISIBLE) {
+                    newPasswordItem.setItemType_ID(clsItemTypes.CREDIT_CARDS);
+                    EventBus.getDefault().post(new clsEvents.replaceFragment(newPasswordItem.getID(),
+                            MySettings.FRAG_EDIT_CREDIT_CARD, true));
+
+                } else if (lvGeneralAccounts.getVisibility() == View.VISIBLE) {
+                    newPasswordItem.setItemType_ID(clsItemTypes.GENERAL_ACCOUNTS);
+                    EventBus.getDefault().post(new clsEvents.replaceFragment(newPasswordItem.getID(),
+                            MySettings.FRAG_EDIT_GENERAL_ACCOUNT, true));
+
+                } else if (lvSoftware.getVisibility() == View.VISIBLE) {
+                    newPasswordItem.setItemType_ID(clsItemTypes.SOFTWARE);
+                    EventBus.getDefault().post(new clsEvents.replaceFragment(newPasswordItem.getID(),
+                            MySettings.FRAG_EDIT_SOFTWARE, true));
+
+                } else if (lvWebsites.getVisibility() == View.VISIBLE) {
+                    newPasswordItem.setItemType_ID(clsItemTypes.WEBSITES);
+                    EventBus.getDefault().post(new clsEvents.replaceFragment(newPasswordItem.getID(),
+                            MySettings.FRAG_EDIT_WEBSITE, true));
+
+                } else if (lvAllUserItems.getVisibility() == View.VISIBLE) {
+                    // TODO: 3/14/2015 Make a dialog asking the user what password type item to create
+                }
+
+                //Toast.makeText(getActivity(), "TO COME: action_new", Toast.LENGTH_SHORT).show();
                 return true;
 
             case R.id.action_show_search:
@@ -252,6 +273,7 @@ public class PasswordItemsListFragment extends Fragment
         mActiveListView = passwordsSavedState.getInt(MySettings.ARG_ACTIVE_LIST_VIEW, clsItemTypes.CREDIT_CARDS);
         MainActivity.setActiveFragmentID(MySettings.FRAG_ITEMS_LIST);
         setupDisplay(mActiveListView);
+        MainActivity.sortPasswordsData();
         updateUI();
         super.onResume();
     }
@@ -388,7 +410,9 @@ public class PasswordItemsListFragment extends Fragment
             clsPasswordItem item = (clsPasswordItem) tvItemName.getTag();
             if (item != null) {
                 int itemID = item.getID();
-                EventBus.getDefault().post(new clsEvents.replaceFragment(itemID, MySettings.FRAG_ITEM_DETAIL));
+                MainActivity.setActivePasswordItemID(itemID);
+                MainActivity.setActivePosition(position);
+                EventBus.getDefault().post(new clsEvents.replaceFragment(itemID, MySettings.FRAG_ITEM_DETAIL, false));
             }
         }
     }

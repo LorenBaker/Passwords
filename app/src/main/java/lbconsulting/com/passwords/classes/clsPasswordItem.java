@@ -23,6 +23,15 @@ public class clsPasswordItem {
     private String WebsiteUserID;
     private String WebsitePassword;
 
+    public clsPasswordItem() {
+
+    }
+
+    public clsPasswordItem(int passwordItemID, int userID) {
+        ID = passwordItemID;
+        User_ID = userID;
+    }
+
     public int getID() {
         return ID;
     }
@@ -282,4 +291,5 @@ public class clsPasswordItem {
                 .append("Password: ").append(WebsitePassword);
         return sb.toString();
     }
+
 }

@@ -152,6 +152,7 @@ public class clsFormattingMethods {
     }
 
     public static String formatPhoneNumber(String unformattedPhoneNumber) {
+        unformattedPhoneNumber = unFormatPhoneNumber((unformattedPhoneNumber));
 
         String formattedPhoneNumber = unformattedPhoneNumber;
         String areaCode;
@@ -195,6 +196,7 @@ public class clsFormattingMethods {
         unformattedPhoneNumber = unformattedPhoneNumber.replace("-", "");
         unformattedPhoneNumber = unformattedPhoneNumber.replace("(", "");
         unformattedPhoneNumber = unformattedPhoneNumber.replace(")", "");
+        unformattedPhoneNumber = unformattedPhoneNumber.replace(".", "");
 
         switch (unformattedPhoneNumber.length()) {
             case 7:

@@ -10,6 +10,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:inputType="textCapWords"
+        android:nextFocusDown="@+id/txtCreditCardPart1"
         style="@style/txtPasswordStyle"
         android:hint="Item Name" />
 
@@ -42,6 +43,7 @@
                     android:inputType="number"
                     android:singleLine="true"
                     android:gravity="center"
+                    android:nextFocusDown="@+id/txtCreditCardPart2"
                     style="@style/txtPasswordStyle" />
 
                 <TextView
@@ -57,6 +59,7 @@
                     android:layout_weight="1"
                     android:inputType="number"
                     android:singleLine="true"
+                    android:nextFocusDown="@+id/txtCreditCardPart3"
                     android:gravity="center"
                     style="@style/txtPasswordStyle" />
 
@@ -73,6 +76,7 @@
                     android:layout_weight="1"
                     android:inputType="number"
                     android:singleLine="true"
+                    android:nextFocusDown="@+id/txtCreditCardPart4"
                     android:gravity="center"
                     style="@style/txtPasswordStyle" />
 
@@ -89,6 +93,7 @@
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:inputType="number"
+                    android:nextFocusDown="@+id/txtExpirationMonth"
                     android:singleLine="true"
                     android:gravity="center"
                     style="@style/txtPasswordStyle"/>
@@ -121,6 +126,7 @@
                     android:layout_height="wrap_content"
                     android:inputType="number"
                     android:gravity="right"
+                    android:nextFocusDown="@+id/txtExpirationYear"
                     style="@style/txtPasswordStyle"
                     android:hint="Month" />
 
@@ -135,6 +141,7 @@
                     android:layout_weight="15"
                     android:layout_height="wrap_content"
                     android:inputType="number"
+                    android:nextFocusDown="@+id/txtSecurityCode"
                     style="@style/txtPasswordStyle"
                     android:hint="Year" />
 
@@ -159,6 +166,7 @@
                     android:layout_weight="20"
                     android:layout_height="wrap_content"
                     android:inputType="number"
+                    android:nextFocusDown="@+id/txtPrimaryPhoneNumber"
                     style="@style/txtPasswordStyle"
                     android:hint="Security Code" />
 
@@ -183,6 +191,7 @@
                     android:layout_weight="20"
                     android:layout_height="wrap_content"
                     android:inputType="phone"
+                    android:nextFocusDown="@+id/txtAlternatePhoneNumber"
                     style="@style/txtPasswordStyle"
                     android:hint="Primary Phone Number" />
 

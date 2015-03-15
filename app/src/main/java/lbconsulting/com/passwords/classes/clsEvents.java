@@ -22,10 +22,12 @@ public class clsEvents {
     public static class replaceFragment {
         int mItemID;
         int mFragmentID;
+        boolean mIsNewPasswordItem;
 
-        public replaceFragment(int itemID, int fragmentID) {
+        public replaceFragment(int itemID, int fragmentID, boolean isNewPasswordItem) {
             mItemID = itemID;
             mFragmentID = fragmentID;
+            mIsNewPasswordItem = isNewPasswordItem;
         }
 
         public int getItemID() {
@@ -34,6 +36,10 @@ public class clsEvents {
 
         public int getFragmentID() {
             return mFragmentID;
+        }
+
+        public boolean getIsNewPasswordItem(){
+            return mIsNewPasswordItem;
         }
     }
 }

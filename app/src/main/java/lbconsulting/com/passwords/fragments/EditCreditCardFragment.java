@@ -13,6 +13,7 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.EditText;
@@ -38,12 +39,16 @@ public class EditCreditCardFragment extends Fragment {
     private static final String ARG_ACTIVE_CARD_TYPE = "activeCardType";
     private static final String ARG_CREDIT_CARD_NUMBER = "creditCardNumber";
     private static final String ARG_PASSWORD_ITEM_ID = "passwordItemID";
+    private static final String ARG_IS_NEW_PASSWORD_ITEM = "isNewPasswordItem";
 
     // fragment state variables
     private boolean mIsDirty = false;
+    private boolean mNameValidated = false;
+    private String mOriginalItemName = "";
+    private boolean mIsItemNameDirty = false;
     private int mActiveCardType = MySettings.VISA;
     private String mCreditCardNumber = "";
-    private int mPasswordItemID;
+    private boolean mIsNewPasswordItem = false;
     private int mSelectedCreditCardTypePosition = Spinner.INVALID_POSITION;
 
     private clsPasswordItem mPasswordItem;
@@ -104,7 +109,7 @@ public class EditCreditCardFragment extends Fragment {
                         if (creditCardNumber.length() >= 15) {
                             part3 = creditCardNumber.substring(10, 15);
                         }
-                        part4="";
+                        part4 = "";
                         break;
 
                     case MySettings.DINERS_CLUB:
@@ -119,7 +124,7 @@ public class EditCreditCardFragment extends Fragment {
                         if (creditCardNumber.length() >= 14) {
                             part3 = creditCardNumber.substring(10, 14);
                         }
-                        part4="";
+                        part4 = "";
                         break;
 
                     default:
@@ -143,10 +148,10 @@ public class EditCreditCardFragment extends Fragment {
     }
 
 
-    public static EditCreditCardFragment newInstance(int passwordItemID) {
+    public static EditCreditCardFragment newInstance(boolean isNewPasswordItem) {
         EditCreditCardFragment fragment = new EditCreditCardFragment();
         Bundle args = new Bundle();
-        args.putInt(ARG_PASSWORD_ITEM_ID, passwordItemID);
+        args.putBoolean(ARG_IS_NEW_PASSWORD_ITEM, isNewPasswordItem);
         fragment.setArguments(args);
         return fragment;
     }
@@ -160,8 +165,8 @@ public class EditCreditCardFragment extends Fragment {
         super.onCreate(savedInstanceState);
         MyLog.i("EditCreditCardFragment", "onCreate()");
         if (getArguments() != null) {
-            mPasswordItemID = getArguments().getInt(ARG_PASSWORD_ITEM_ID);
-            mPasswordItem = MainActivity.getPasswordItem(mPasswordItemID);
+            mIsNewPasswordItem = getArguments().getBoolean(ARG_IS_NEW_PASSWORD_ITEM);
+            mPasswordItem = MainActivity.getActivePasswordItem();
             mSelectedCreditCardTypePosition = findSpinnerPosition(mPasswordItem.getCreditCardAccountNumber());
         }
         setHasOptionsMenu(true);
@@ -196,6 +201,18 @@ public class EditCreditCardFragment extends Fragment {
         View rootView = inflater.inflate(R.layout.frag_edit_credit_card, container, false);
 
         txtItemName = (EditText) rootView.findViewById(R.id.txtItemName);
+        txtItemName.setOnFocusChangeListener(new View.OnFocusChangeListener() {
+
+            @Override
+            public void onFocusChange(View v, boolean hasFocus) {
+                if (!hasFocus) {
+                    if (mIsItemNameDirty && !mNameValidated) {
+                        validateItemName();
+                    }
+                }
+            }
+        });
+
         txtItemName.addTextChangedListener(new TextWatcher() {
 
             @Override
@@ -205,7 +222,7 @@ public class EditCreditCardFragment extends Fragment {
 
             @Override
             public void onTextChanged(CharSequence s, int start, int before, int count) {
-                mIsDirty = true;
+                mIsItemNameDirty = true;
             }
 
             @Override
@@ -236,6 +253,7 @@ public class EditCreditCardFragment extends Fragment {
                         txtCreditCardPart1.setFilters(new InputFilter[]{length4Filter});
                         txtCreditCardPart2.setFilters(new InputFilter[]{length6Filter});
                         txtCreditCardPart3.setFilters(new InputFilter[]{length5Filter});
+                        txtCreditCardPart3.setNextFocusDownId(R.id.txtExpirationMonth);
                         txtCreditCardPart4.setVisibility(View.GONE);
                         tvSpacer3.setVisibility(View.GONE);
                         break;
@@ -247,6 +265,7 @@ public class EditCreditCardFragment extends Fragment {
                         txtCreditCardPart1.setFilters(new InputFilter[]{length4Filter});
                         txtCreditCardPart2.setFilters(new InputFilter[]{length6Filter});
                         txtCreditCardPart3.setFilters(new InputFilter[]{length4Filter});
+                        txtCreditCardPart3.setNextFocusDownId(R.id.txtExpirationMonth);
                         txtCreditCardPart4.setVisibility(View.GONE);
                         tvSpacer3.setVisibility(View.GONE);
                         break;
@@ -258,12 +277,13 @@ public class EditCreditCardFragment extends Fragment {
                         txtCreditCardPart1.setFilters(new InputFilter[]{length4Filter});
                         txtCreditCardPart2.setFilters(new InputFilter[]{length4Filter});
                         txtCreditCardPart3.setFilters(new InputFilter[]{length4Filter});
+                        txtCreditCardPart3.setNextFocusDownId(R.id.txtCreditCardPart4);
                         txtCreditCardPart4.setFilters(new InputFilter[]{length4Filter});
                         txtCreditCardPart4.setVisibility(View.VISIBLE);
                         tvSpacer3.setVisibility(View.VISIBLE);
                         break;
                 }
-                updateUI();
+                updateCreditCardUI();
             }
 
             @Override
@@ -422,6 +442,17 @@ public class EditCreditCardFragment extends Fragment {
             }
         });
         txtPrimaryPhoneNumber = (EditText) rootView.findViewById(R.id.txtPrimaryPhoneNumber);
+        txtPrimaryPhoneNumber.setOnFocusChangeListener(new View.OnFocusChangeListener() {
+
+            @Override
+            public void onFocusChange(View v, boolean hasFocus) {
+                if (!hasFocus) {
+                    String formattedPrimaryPhoneNumber = clsFormattingMethods
+                            .formatPhoneNumber(txtPrimaryPhoneNumber.getText().toString().trim());
+                    txtPrimaryPhoneNumber.setText(formattedPrimaryPhoneNumber);
+                }
+            }
+        });
         txtPrimaryPhoneNumber.addTextChangedListener(new TextWatcher() {
             @Override
             public void beforeTextChanged(CharSequence s, int start, int count, int after) {
@@ -439,6 +470,17 @@ public class EditCreditCardFragment extends Fragment {
             }
         });
         txtAlternatePhoneNumber = (EditText) rootView.findViewById(R.id.txtAlternatePhoneNumber);
+        txtAlternatePhoneNumber.setOnFocusChangeListener(new View.OnFocusChangeListener() {
+
+            @Override
+            public void onFocusChange(View v, boolean hasFocus) {
+                if (!hasFocus) {
+                    String formattedAlternatePhoneNumber = clsFormattingMethods
+                            .formatPhoneNumber(txtAlternatePhoneNumber.getText().toString().trim());
+                    txtPrimaryPhoneNumber.setText(formattedAlternatePhoneNumber);
+                }
+            }
+        });
         txtAlternatePhoneNumber.addTextChangedListener(new TextWatcher() {
             @Override
             public void beforeTextChanged(CharSequence s, int start, int count, int after) {
@@ -458,6 +500,28 @@ public class EditCreditCardFragment extends Fragment {
         return rootView;
     }
 
+    private void validateItemName() {
+        String itemName = txtItemName.getText().toString().trim();
+        if (!itemName.equalsIgnoreCase(mOriginalItemName)) {
+            if (itemName.isEmpty()) {
+                MainActivity.showOkDialog(getActivity(),
+                        "Invalid Item Name", "The item’s name cannot be empty!\n\nReverting back to the unedited name.");
+                txtItemName.setText(mOriginalItemName);
+            } else {
+                // check if the name exists
+                if (MainActivity.itemNameExist(itemName, mPasswordItem.getUser_ID())) {
+                    MainActivity.showOkDialog(getActivity(),
+                            "Invalid Item Name", "\"" + itemName + "\" already exists!\n\nReverting back to the unedited name.");
+                    txtItemName.setText(mOriginalItemName);
+                } else {
+                    // the item name does not exist
+                    mIsDirty = true;
+                    //MainActivity.sortPasswordsData();
+                }
+            }
+        }
+    }
+
     private void validateCreditCard() {
         mCreditCardNumber = makeCreditCardNumber();
         clsFormattingMethods.creditCard card = clsFormattingMethods.getCreditCardType(mCreditCardNumber);
@@ -465,7 +529,7 @@ public class EditCreditCardFragment extends Fragment {
         if (creditCardTypeResult) {
             boolean luhnTestResult = clsFormattingMethods.luhnTest(mCreditCardNumber);
             if (luhnTestResult) {
-                if(mSelectedCreditCardTypePosition==card.getCardPosition()){
+                if (mSelectedCreditCardTypePosition == card.getCardPosition()) {
                     ivCardVerification.setImageResource(R.drawable.btn_check_buttonless_on);
                     return;
                 }
@@ -479,20 +543,26 @@ public class EditCreditCardFragment extends Fragment {
         super.onActivityCreated(savedInstanceState);
         MyLog.i("EditCreditCardFragment", "onActivityCreated()");
         // Restore saved state
-/*        outState.putBoolean(ARG_IS_DIRTY, mIsDirty);
-        outState.putInt(ARG_ACTIVE_CARD_TYPE, mActiveCardType);
-        outState.putString(ARG_CREDIT_CARD_NUMBER, mCreditCardNumber);
-        outState.putInt(ARG_PASSWORD_ITEM_ID, mPasswordItemID); */
         if (savedInstanceState != null) {
             MyLog.i("EditCreditCardFragment", "onActivityCreated(): savedInstanceState");
             mIsDirty = savedInstanceState.getBoolean(ARG_IS_DIRTY);
             mActiveCardType = savedInstanceState.getInt(ARG_ACTIVE_CARD_TYPE);
             mCreditCardNumber = savedInstanceState.getString(ARG_CREDIT_CARD_NUMBER);
-            mPasswordItemID = savedInstanceState.getInt(ARG_PASSWORD_ITEM_ID);
-            mPasswordItem = MainActivity.getPasswordItem(mPasswordItemID);
+            mPasswordItem = MainActivity.getActivePasswordItem();
             mSelectedCreditCardTypePosition = findSpinnerPosition(mPasswordItem.getCreditCardAccountNumber());
         }
         spnCreditCardType.setSelection(mSelectedCreditCardTypePosition);
+    }
+
+
+    @Override
+    public void onSaveInstanceState(Bundle outState) {
+        super.onSaveInstanceState(outState);
+        MyLog.i("EditCreditCardFragment", "onSaveInstanceState()");
+
+        outState.putBoolean(ARG_IS_DIRTY, mIsDirty);
+        outState.putInt(ARG_ACTIVE_CARD_TYPE, mActiveCardType);
+        outState.putString(ARG_CREDIT_CARD_NUMBER, mCreditCardNumber);
     }
 
     @Override
@@ -505,44 +575,55 @@ public class EditCreditCardFragment extends Fragment {
 
     public void onEvent(clsEvents.updateUI event) {
         MyLog.i("EditCreditCardFragment", "onEvent.updateUI()");
-        mPasswordItem = MainActivity.getPasswordItem(mPasswordItemID);
+        mOriginalItemName = "";
         updateUI();
     }
 
     private void updateUI() {
-        mPasswordItem = MainActivity.getPasswordItem(mPasswordItemID);
-        txtItemName.setText(mPasswordItem.getName());
-        // TODO: 3/12/2015 fill spnCreditCardType. Place selected value in creditCardParts
+        mPasswordItem = MainActivity.getActivePasswordItem();
+        if (mPasswordItem != null) {
+            txtItemName.setText(mPasswordItem.getName());
+            if (mOriginalItemName.isEmpty()) {
+                mOriginalItemName = mPasswordItem.getName();
+            }
 
-        CreditCardParts creditCardParts = new CreditCardParts(mPasswordItem.getCreditCardAccountNumber(),mSelectedCreditCardTypePosition);
+            updateCreditCardUI();
+
+            txtExpirationMonth.setText(mPasswordItem.getCreditCardExpirationMonth());
+            txtExpirationYear.setText(mPasswordItem.getCreditCardExpirationYear());
+            txtSecurityCode.setText(mPasswordItem.getCardCreditSecurityCode());
+
+            String formattedPrimaryPhoneNumber = clsFormattingMethods.formatPhoneNumber(mPasswordItem.getPrimaryPhoneNumber());
+            String formattedAlternatePhoneNumber = clsFormattingMethods.formatPhoneNumber(mPasswordItem.getAlternatePhoneNumber());
+            txtPrimaryPhoneNumber.setText(formattedPrimaryPhoneNumber);
+            txtAlternatePhoneNumber.setText(formattedAlternatePhoneNumber);
+        }
+    }
+
+    private void updateCreditCardUI() {
+        CreditCardParts creditCardParts = new CreditCardParts(mPasswordItem.getCreditCardAccountNumber(), mSelectedCreditCardTypePosition);
         txtCreditCardPart1.setText(creditCardParts.getPart1());
         txtCreditCardPart2.setText(creditCardParts.getPart2());
         txtCreditCardPart3.setText(creditCardParts.getPart3());
         txtCreditCardPart4.setText(creditCardParts.getPart4());
 
         validateCreditCard();
-
-        txtExpirationMonth.setText(mPasswordItem.getCreditCardExpirationMonth());
-        txtExpirationYear.setText(mPasswordItem.getCreditCardExpirationYear());
-        txtSecurityCode.setText(mPasswordItem.getCardCreditSecurityCode());
-
-        String formattedPrimaryPhoneNumber = clsFormattingMethods.formatPhoneNumber(mPasswordItem.getPrimaryPhoneNumber());
-        String formattedAlternatePhoneNumber = clsFormattingMethods.formatPhoneNumber(mPasswordItem.getAlternatePhoneNumber());
-        txtPrimaryPhoneNumber.setText(formattedPrimaryPhoneNumber);
-        txtAlternatePhoneNumber.setText(formattedAlternatePhoneNumber);
-
     }
 
     private void updatePasswordItem() {
-        mPasswordItem.setName(txtItemName.getText().toString());
+
+        mPasswordItem.setName(txtItemName.getText().toString().trim());
         mCreditCardNumber = makeCreditCardNumber();
         mPasswordItem.setCreditCardAccountNumber(mCreditCardNumber);
         mPasswordItem.setCreditCardExpirationMonth(txtExpirationMonth.getText().toString());
         mPasswordItem.setCreditCardExpirationYear(txtExpirationYear.getText().toString());
         mPasswordItem.setCreditCardSecurityCode(txtSecurityCode.getText().toString());
-        mPasswordItem.setPrimaryPhoneNumber(txtPrimaryPhoneNumber.getText().toString());
-        mPasswordItem.setAlternatePhoneNumber(txtAlternatePhoneNumber.getText().toString());
+        String unformattedPrimaryPhoneNumber = clsFormattingMethods.unFormatPhoneNumber(txtPrimaryPhoneNumber.getText().toString());
+        String unformattedAlternatePhoneNumber = clsFormattingMethods.unFormatPhoneNumber(txtAlternatePhoneNumber.getText().toString());
+        mPasswordItem.setPrimaryPhoneNumber(unformattedPrimaryPhoneNumber);
+        mPasswordItem.setAlternatePhoneNumber(unformattedAlternatePhoneNumber);
         mIsDirty = false;
+
     }
 
     private String makeCreditCardNumber() {
@@ -564,7 +645,7 @@ public class EditCreditCardFragment extends Fragment {
 
     @Override
     public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
-        inflater.inflate(R.menu.menu_frag_edit_credit_card, menu);
+        inflater.inflate(R.menu.menu_frag_edit, menu);
         super.onCreateOptionsMenu(menu, inflater);
     }
 
@@ -573,6 +654,29 @@ public class EditCreditCardFragment extends Fragment {
         switch (item.getItemId()) {
 
             // Do Fragment menu item stuff here
+            case R.id.action_save:
+                if (txtItemName.hasFocus()) {
+                    validateItemName();
+                    mNameValidated = true;
+                }
+                InputMethodManager imm = (InputMethodManager) getActivity()
+                        .getSystemService(getActivity().INPUT_METHOD_SERVICE);
+                imm.hideSoftInputFromWindow(txtItemName.getWindowToken(), 0);
+
+                EventBus.getDefault().post(new clsEvents.PopBackStack());
+
+                return true;
+
+            case R.id.action_cancel:
+                //Toast.makeText(getActivity(), "TO COME: action_cancel", Toast.LENGTH_SHORT).show();
+                mIsDirty = false;
+                if (mIsNewPasswordItem) {
+                    // delete the newly created password item
+                    MainActivity.deletePasswordItem(mPasswordItem.getID());
+                }
+                EventBus.getDefault().post(new clsEvents.PopBackStack());
+                return true;
+
             case R.id.action_clear:
                 //Toast.makeText(getActivity(), "TO COME: action_clear", Toast.LENGTH_SHORT).show();
                 txtCreditCardPart1.setText("");
@@ -590,11 +694,6 @@ public class EditCreditCardFragment extends Fragment {
                 mIsDirty = true;
                 return true;
 
-            case R.id.action_cancel:
-                //Toast.makeText(getActivity(), "TO COME: action_cancel", Toast.LENGTH_SHORT).show();
-                mIsDirty = false;
-                EventBus.getDefault().post(new clsEvents.PopBackStack());
-                return true;
 
             case android.R.id.home:
                 EventBus.getDefault().post(new clsEvents.PopBackStack());
@@ -606,16 +705,6 @@ public class EditCreditCardFragment extends Fragment {
         }
     }
 
-    @Override
-    public void onSaveInstanceState(Bundle outState) {
-        super.onSaveInstanceState(outState);
-        MyLog.i("EditCreditCardFragment", "onSaveInstanceState()");
-
-        outState.putBoolean(ARG_IS_DIRTY, mIsDirty);
-        outState.putInt(ARG_ACTIVE_CARD_TYPE, mActiveCardType);
-        outState.putString(ARG_CREDIT_CARD_NUMBER, mCreditCardNumber);
-        outState.putInt(ARG_PASSWORD_ITEM_ID, mPasswordItemID);
-    }
 
     @Override
     public void onPause() {

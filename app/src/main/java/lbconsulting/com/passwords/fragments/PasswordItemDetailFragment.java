@@ -45,11 +45,11 @@ public class PasswordItemDetailFragment extends Fragment implements View.OnClick
     TextView tvWebsiteDetail;
 
 
-    public static PasswordItemDetailFragment newInstance(int itemID) {
+    public static PasswordItemDetailFragment newInstance() {
         PasswordItemDetailFragment fragment = new PasswordItemDetailFragment();
-        Bundle args = new Bundle();
+/*        Bundle args = new Bundle();
         args.putInt(MySettings.ARG_ITEM_ID, itemID);
-        fragment.setArguments(args);
+        fragment.setArguments(args);*/
         return fragment;
     }
 
@@ -64,10 +64,6 @@ public class PasswordItemDetailFragment extends Fragment implements View.OnClick
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         MyLog.i("PasswordItemDetailFragment", "onCreate()");
-        if (getArguments().containsKey(MySettings.ARG_ITEM_ID)) {
-            int itemID = getArguments().getInt(MySettings.ARG_ITEM_ID);
-            mPasswordItem = MainActivity.getPasswordItem(itemID);
-        }
         setHasOptionsMenu(true);
     }
 
@@ -102,57 +98,60 @@ public class PasswordItemDetailFragment extends Fragment implements View.OnClick
     }
 
     private void updateUI() {
-        tvPasswordItemName.setText(mPasswordItem.getName());
-        tvItemDetail.setText(mPasswordItem.getItemDetail());
-        tvWebsiteDetail.setText(mPasswordItem.getWebsiteDetail());
-        txtComments.setText(mPasswordItem.getComments());
+        mPasswordItem = MainActivity.getActivePasswordItem();
+        if(mPasswordItem!=null) {
+            tvPasswordItemName.setText(mPasswordItem.getName());
+            tvItemDetail.setText(mPasswordItem.getItemDetail());
+            tvWebsiteDetail.setText(mPasswordItem.getWebsiteDetail());
+            txtComments.setText(mPasswordItem.getComments());
 
-        btnGoToWebsite.setEnabled(true);
-        if (mPasswordItem.getWebsiteURL() == null) {
-            btnGoToWebsite.setEnabled(false);
-        }
+            btnGoToWebsite.setEnabled(true);
+            if (mPasswordItem.getWebsiteURL() == null) {
+                btnGoToWebsite.setEnabled(false);
+            }
 
-        btnCopyPassword.setEnabled(true);
-        if (mPasswordItem.getWebsitePassword() == null) {
-            btnCopyPassword.setEnabled(false);
-        }
+            btnCopyPassword.setEnabled(true);
+            if (mPasswordItem.getWebsitePassword() == null) {
+                btnCopyPassword.setEnabled(false);
+            }
 
-        btnCallAlternate.setEnabled(true);
-        if (mPasswordItem.getAlternatePhoneNumber() == null) {
-            btnCallAlternate.setEnabled(false);
-        }
+            btnCallAlternate.setEnabled(true);
+            if (mPasswordItem.getAlternatePhoneNumber() == null) {
+                btnCallAlternate.setEnabled(false);
+            }
 
-        btnCallPrimary.setEnabled(true);
-        if (mPasswordItem.getPrimaryPhoneNumber() == null) {
-            btnCallPrimary.setEnabled(false);
-        }
+            btnCallPrimary.setEnabled(true);
+            if (mPasswordItem.getPrimaryPhoneNumber() == null) {
+                btnCallPrimary.setEnabled(false);
+            }
 
-        btnCopyAccountNumber.setEnabled(true);
-        switch (mPasswordItem.getItemType_ID()) {
-            case clsItemTypes.CREDIT_CARDS:
-                if (mPasswordItem.getCreditCardAccountNumber() == null) {
-                    btnCopyAccountNumber.setEnabled(false);
-                }
-                break;
+            btnCopyAccountNumber.setEnabled(true);
+            switch (mPasswordItem.getItemType_ID()) {
+                case clsItemTypes.CREDIT_CARDS:
+                    if (mPasswordItem.getCreditCardAccountNumber() == null) {
+                        btnCopyAccountNumber.setEnabled(false);
+                    }
+                    break;
 
-            case clsItemTypes.GENERAL_ACCOUNTS:
-                if (mPasswordItem.getGeneralAccountNumber() == null) {
-                    btnCopyAccountNumber.setEnabled(false);
-                }
-        }
+                case clsItemTypes.GENERAL_ACCOUNTS:
+                    if (mPasswordItem.getGeneralAccountNumber() == null) {
+                        btnCopyAccountNumber.setEnabled(false);
+                    }
+            }
 
-        if (mPasswordItem.getItemType_ID() == clsItemTypes.WEBSITES) {
-            tvItemDetail.setVisibility(View.GONE);
-            btnEditItem.setVisibility(View.GONE);
-            btnCopyAccountNumber.setVisibility(View.GONE);
-            btnCallAlternate.setVisibility(View.GONE);
-            btnCallPrimary.setVisibility(View.GONE);
-        } else {
-            tvItemDetail.setVisibility(View.VISIBLE);
-            btnEditItem.setVisibility(View.VISIBLE);
-            btnCopyAccountNumber.setVisibility(View.VISIBLE);
-            btnCallAlternate.setVisibility(View.VISIBLE);
-            btnCallPrimary.setVisibility(View.VISIBLE);
+            if (mPasswordItem.getItemType_ID() == clsItemTypes.WEBSITES) {
+                tvItemDetail.setVisibility(View.GONE);
+                btnEditItem.setVisibility(View.GONE);
+                btnCopyAccountNumber.setVisibility(View.GONE);
+                btnCallAlternate.setVisibility(View.GONE);
+                btnCallPrimary.setVisibility(View.GONE);
+            } else {
+                tvItemDetail.setVisibility(View.VISIBLE);
+                btnEditItem.setVisibility(View.VISIBLE);
+                btnCopyAccountNumber.setVisibility(View.VISIBLE);
+                btnCallAlternate.setVisibility(View.VISIBLE);
+                btnCallPrimary.setVisibility(View.VISIBLE);
+            }
         }
     }
 
@@ -199,11 +198,39 @@ public class PasswordItemDetailFragment extends Fragment implements View.OnClick
 
             // Do Fragment menu item stuff here
             case R.id.action_discard:
-                Toast.makeText(getActivity(), "TO COME: action_discard", Toast.LENGTH_SHORT).show();
+                //Toast.makeText(getActivity(), "TO COME: action_discard", Toast.LENGTH_SHORT).show();
+                MainActivity.deletePasswordItem(MainActivity.getActivePasswordItemID());
+                EventBus.getDefault().post(new clsEvents.PopBackStack());
                 return true;
 
             case R.id.action_new:
-                Toast.makeText(getActivity(), "TO COME: action_new", Toast.LENGTH_SHORT).show();
+                //Toast.makeText(getActivity(), "TO COME: action_new", Toast.LENGTH_SHORT).show();
+                clsPasswordItem newPasswordItem = MainActivity.createNewPasswordItem();
+                switch (mPasswordItem.getItemType_ID()) {
+                    case clsItemTypes.CREDIT_CARDS:
+                        newPasswordItem.setItemType_ID(clsItemTypes.CREDIT_CARDS);
+                        EventBus.getDefault().post(new clsEvents.replaceFragment(newPasswordItem.getID(),
+                                MySettings.FRAG_EDIT_CREDIT_CARD, true));
+                        break;
+
+                    case clsItemTypes.GENERAL_ACCOUNTS:
+                        newPasswordItem.setItemType_ID(clsItemTypes.GENERAL_ACCOUNTS);
+                        EventBus.getDefault().post(new clsEvents.replaceFragment(newPasswordItem.getID(),
+                                MySettings.FRAG_EDIT_GENERAL_ACCOUNT, true));
+                        break;
+
+                    case clsItemTypes.SOFTWARE:
+                        newPasswordItem.setItemType_ID(clsItemTypes.SOFTWARE);
+                        EventBus.getDefault().post(new clsEvents.replaceFragment(newPasswordItem.getID(),
+                                MySettings.FRAG_EDIT_SOFTWARE, true));
+                        break;
+
+                    case clsItemTypes.WEBSITES:
+                        newPasswordItem.setItemType_ID(clsItemTypes.WEBSITES);
+                        EventBus.getDefault().post(new clsEvents.replaceFragment(newPasswordItem.getID(),
+                                MySettings.FRAG_EDIT_WEBSITE, true));
+                        break;
+                }
                 return true;
             default:
                 // Not implemented here
@@ -235,13 +262,20 @@ public class PasswordItemDetailFragment extends Fragment implements View.OnClick
                 break;
 
             case R.id.btnEditItem:
-                switch (mPasswordItem.getItemType_ID()){
-                    case  MySettings.
-                        EventBus.getDefault().post(new clsEvents.replaceFragment(mPasswordItem.getID(), MySettings.FRAG_EDIT_CREDIT_CARD));
+                switch (mPasswordItem.getItemType_ID()) {
+                    case clsItemTypes.CREDIT_CARDS:
+                        EventBus.getDefault().post(new clsEvents.replaceFragment(mPasswordItem.getID(),
+                                MySettings.FRAG_EDIT_CREDIT_CARD, false));
                         break;
 
-                    case MySettings.FRAG_EDIT_GENERAL_ACCOUNT:
+                    case clsItemTypes.GENERAL_ACCOUNTS:
+                        EventBus.getDefault().post(new clsEvents.replaceFragment(mPasswordItem.getID(),
+                                MySettings.FRAG_EDIT_GENERAL_ACCOUNT, false));
+                        break;
 
+                    case clsItemTypes.SOFTWARE:
+                        EventBus.getDefault().post(new clsEvents.replaceFragment(mPasswordItem.getID(),
+                                MySettings.FRAG_EDIT_SOFTWARE, false));
                         break;
                 }
                 //Toast.makeText(getActivity(), "TO COME: btnEditItem", Toast.LENGTH_SHORT).show();
