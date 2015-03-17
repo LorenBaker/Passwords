@@ -3,6 +3,8 @@ package lbconsulting.com.passwords.fragments;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -30,19 +32,20 @@ import lbconsulting.com.passwords.classes.clsPasswordItem;
  */
 public class PasswordItemDetailFragment extends Fragment implements View.OnClickListener {
 
-    clsPasswordItem mPasswordItem;
+    private clsPasswordItem mPasswordItem;
+    private boolean mIsDirty = false;
 
-    Button btnCallAlternate;
-    Button btnCallPrimary;
-    Button btnCopyAccountNumber;
-    Button btnCopyPassword;
-    Button btnGoToWebsite;
-    EditText txtComments;
-    ImageButton btnEditItem;
-    ImageButton btnEditWebsite;
-    TextView tvItemDetail;
-    TextView tvPasswordItemName;
-    TextView tvWebsiteDetail;
+    private Button btnCallAlternate;
+    private Button btnCallPrimary;
+    private Button btnCopyAccountNumber;
+    private Button btnCopyPassword;
+    private Button btnGoToWebsite;
+    private EditText txtComments;
+    private ImageButton btnEditItem;
+    private ImageButton btnEditWebsite;
+    private TextView tvItemDetail;
+    private TextView tvPasswordItemName;
+    private TextView tvWebsiteDetail;
 
 
     public static PasswordItemDetailFragment newInstance() {
@@ -92,6 +95,22 @@ public class PasswordItemDetailFragment extends Fragment implements View.OnClick
         tvItemDetail = (TextView) rootView.findViewById(R.id.tvItemDetail);
         tvWebsiteDetail = (TextView) rootView.findViewById(R.id.tvWebsiteDetail);
         txtComments = (EditText) rootView.findViewById(R.id.txtComments);
+        txtComments.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+
+            }
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+                mIsDirty = true;
+            }
+
+            @Override
+            public void afterTextChanged(Editable s) {
+
+            }
+        });
 
         updateUI();
         return rootView;
@@ -99,7 +118,7 @@ public class PasswordItemDetailFragment extends Fragment implements View.OnClick
 
     private void updateUI() {
         mPasswordItem = MainActivity.getActivePasswordItem();
-        if(mPasswordItem!=null) {
+        if (mPasswordItem != null) {
             tvPasswordItemName.setText(mPasswordItem.getName());
             tvItemDetail.setText(mPasswordItem.getItemDetail());
             tvWebsiteDetail.setText(mPasswordItem.getWebsiteDetail());
@@ -152,6 +171,7 @@ public class PasswordItemDetailFragment extends Fragment implements View.OnClick
                 btnCallAlternate.setVisibility(View.VISIBLE);
                 btnCallPrimary.setVisibility(View.VISIBLE);
             }
+            mIsDirty = false;
         }
     }
 
@@ -178,6 +198,9 @@ public class PasswordItemDetailFragment extends Fragment implements View.OnClick
     public void onPause() {
         super.onPause();
         MyLog.i("PasswordItemDetailFragment", "onPause()");
+        if (mIsDirty) {
+            mPasswordItem.setComments(txtComments.getText().toString().trim());
+        }
     }
 
     @Override
@@ -282,7 +305,9 @@ public class PasswordItemDetailFragment extends Fragment implements View.OnClick
                 break;
 
             case R.id.btnEditWebsite:
-                Toast.makeText(getActivity(), "TO COME: btnEditWebsite", Toast.LENGTH_SHORT).show();
+                EventBus.getDefault().post(new clsEvents.replaceFragment(mPasswordItem.getID(),
+                        MySettings.FRAG_EDIT_WEBSITE, false));
+                //Toast.makeText(getActivity(), "TO COME: btnEditWebsite", Toast.LENGTH_SHORT).show();
                 break;
 
         }

@@ -242,7 +242,7 @@ public class clsPasswordItem {
                     formattedCardNumber = card.getFormattedCardNumber();
                 }
 
-                sb.append(cardType).append(": ").append(formattedCardNumber);
+                sb.append(cardType).append(":\n").append(formattedCardNumber);
                 if (CreditCardExpirationMonth != null && CreditCardExpirationYear != null) {
                     sb.append(System.getProperty("line.separator")).append("Expires: ").append(CreditCardExpirationMonth)
                             .append("/").append(CreditCardExpirationYear);
@@ -274,7 +274,7 @@ public class clsPasswordItem {
 
             case clsItemTypes.SOFTWARE:
                 String formattedKeyCode = clsFormattingMethods.formatTypicalAccountNumber(SoftwareKeyCode, SoftwareSubgroupLength);
-                sb.append("Software Key Code: ").append(formattedKeyCode);
+                sb.append("Software Key Code:\n").append(formattedKeyCode);
                 break;
 /*            case clsItemTypes.WEBSITES:
                 break;*/
@@ -286,9 +286,10 @@ public class clsPasswordItem {
     public String getWebsiteDetail() {
         StringBuilder sb = new StringBuilder();
         sb
-                .append("URL: ").append(WebsiteURL).append(System.getProperty("line.separator"))
-                .append("ID: ").append(WebsiteUserID).append(System.getProperty("line.separator"))
-                .append("Password: ").append(WebsitePassword);
+                .append("URL:\n  ").append(WebsiteURL).append(System.getProperty("line.separator"))
+                .append(System.getProperty("line.separator"))
+                .append("User ID: ").append(WebsiteUserID).append(System.getProperty("line.separator"))
+                .append("Password:\n  ").append(WebsitePassword);
         return sb.toString();
     }
 

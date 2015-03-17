@@ -597,6 +597,7 @@ public class EditCreditCardFragment extends Fragment {
             String formattedAlternatePhoneNumber = clsFormattingMethods.formatPhoneNumber(mPasswordItem.getAlternatePhoneNumber());
             txtPrimaryPhoneNumber.setText(formattedPrimaryPhoneNumber);
             txtAlternatePhoneNumber.setText(formattedAlternatePhoneNumber);
+            mIsDirty=false;
         }
     }
 
@@ -623,7 +624,6 @@ public class EditCreditCardFragment extends Fragment {
         mPasswordItem.setPrimaryPhoneNumber(unformattedPrimaryPhoneNumber);
         mPasswordItem.setAlternatePhoneNumber(unformattedAlternatePhoneNumber);
         mIsDirty = false;
-
     }
 
     private String makeCreditCardNumber() {

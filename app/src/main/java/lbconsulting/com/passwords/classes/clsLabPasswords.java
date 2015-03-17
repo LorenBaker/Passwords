@@ -33,5 +33,15 @@ public class clsLabPasswords {
     private ArrayList<clsUsers> Users = new ArrayList<>();
     private ArrayList<clsItemTypes> ItemTypes = new ArrayList<>();
     private ArrayList<clsPasswordItem> PasswordItems = new ArrayList<>();
-  
+
+    public clsUsers getUser(int userID) {
+        clsUsers result = null;
+        for (clsUsers user : Users) {
+            if (user.getUserID() == userID) {
+                result = user;
+                break;
+            }
+        }
+        return result;
+    }
 }

@@ -4,6 +4,8 @@ import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -15,7 +17,6 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ListView;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import java.util.ArrayList;
 
@@ -26,7 +27,6 @@ import lbconsulting.com.passwords.adapters.PasswordItemsListViewAdapter;
 import lbconsulting.com.passwords.classes.MyLog;
 import lbconsulting.com.passwords.classes.MySettings;
 import lbconsulting.com.passwords.classes.clsEvents;
-import lbconsulting.com.passwords.classes.clsFormattingMethods;
 import lbconsulting.com.passwords.classes.clsItemTypes;
 import lbconsulting.com.passwords.classes.clsPasswordItem;
 
@@ -56,6 +56,8 @@ public class PasswordItemsListFragment extends Fragment
     //<editor-fold desc="Module Variables">
 
     private int mActiveListView = clsItemTypes.CREDIT_CARDS;
+    private String mSearchText;
+    private String ARG_SEARCH_TEXT = "searchText";
 
     //private int mActiveUserID;
     private ArrayList<clsPasswordItem> mAllItems;
@@ -64,6 +66,7 @@ public class PasswordItemsListFragment extends Fragment
     private ArrayList<clsPasswordItem> mUserGeneralAccountItems;
     private ArrayList<clsPasswordItem> mUserWebsiteItems;
     private ArrayList<clsPasswordItem> mUserSoftwareItems;
+    private PasswordItemsListViewAdapter mAllUserItemsAdapter;
 
     //</editor-fold>
 
@@ -75,7 +78,7 @@ public class PasswordItemsListFragment extends Fragment
     public static PasswordItemsListFragment newInstance() {
         PasswordItemsListFragment fragment = new PasswordItemsListFragment();
 /*        Bundle args = new Bundle();
-        args.putInt(MySettings.ARG_ACTIVE_USER_ID, userID);
+        args.putInt(MySettings.SETTING_ACTIVE_USER_ID, userID);
         fragment.setArguments(args);*/
         return fragment;
     }
@@ -92,6 +95,13 @@ public class PasswordItemsListFragment extends Fragment
     public void onActivityCreated(@Nullable Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
         MyLog.i("PasswordItemsListFragment", "onActivityCreated()");
+        if (savedInstanceState != null) {
+            mSearchText = savedInstanceState.getString(ARG_SEARCH_TEXT);
+        }
+
+/*        SharedPreferences passwordsSavedState =
+                getActivity().getSharedPreferences(MySettings.PASSWORDS_SAVED_STATES, 0);
+        mSearchText = passwordsSavedState.getString(ARG_SEARCH_TEXT, "");*/
     }
 
 
@@ -103,6 +113,36 @@ public class PasswordItemsListFragment extends Fragment
         View rootView = inflater.inflate(R.layout.frag_password_items_list, container, false);
 
         txtSearch = (EditText) rootView.findViewById(R.id.txtSearch);
+        txtSearch.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+
+            }
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+                if (lvAllUserItems != null && mAllUserItems != null) {
+                    mSearchText = s.toString();
+                    if (s.length() == 0) {
+                        mAllUserItemsAdapter = new PasswordItemsListViewAdapter(getActivity(), mAllUserItems);
+                        lvAllUserItems.setAdapter(mAllUserItemsAdapter);
+                    } else {
+                        ArrayList<clsPasswordItem> filteredUserItems = new ArrayList<clsPasswordItem>();
+                        for (clsPasswordItem item : mAllUserItems) {
+                            if (item.getName().contains(s)) {
+                                filteredUserItems.add(item);
+                            }
+                        }
+                        mAllUserItemsAdapter = new PasswordItemsListViewAdapter(getActivity(), filteredUserItems);
+                        lvAllUserItems.setAdapter(mAllUserItemsAdapter);
+                    }
+                }
+            }
+
+            @Override
+            public void afterTextChanged(Editable s) {
+            }
+        });
 
         btnCreditCards = (Button) rootView.findViewById(R.id.btnCreditCards);
         btnGeneralAccounts = (Button) rootView.findViewById(R.id.btnGeneralAccounts);
@@ -183,13 +223,19 @@ public class PasswordItemsListFragment extends Fragment
     }
 
     private void setArrayAdapters() {
-        PasswordItemsListViewAdapter allUserItemsAdapter = new PasswordItemsListViewAdapter(getActivity(), mAllUserItems);
-        PasswordItemsListViewAdapter userCreditCardItemsAdapter = new PasswordItemsListViewAdapter(getActivity(), mUserCreditCardItems);
-        PasswordItemsListViewAdapter userGeneralAccountItemsAdapter = new PasswordItemsListViewAdapter(getActivity(), mUserGeneralAccountItems);
-        PasswordItemsListViewAdapter userSoftwareItemsAdapter = new PasswordItemsListViewAdapter(getActivity(), mUserSoftwareItems);
-        PasswordItemsListViewAdapter userWebsiteItemsAdapter = new PasswordItemsListViewAdapter(getActivity(), mUserWebsiteItems);
+        mAllUserItemsAdapter = new PasswordItemsListViewAdapter(getActivity(), mAllUserItems);
+        PasswordItemsListViewAdapter userCreditCardItemsAdapter =
+                new PasswordItemsListViewAdapter(getActivity(), mUserCreditCardItems);
+        PasswordItemsListViewAdapter userGeneralAccountItemsAdapter =
+                new PasswordItemsListViewAdapter(getActivity(), mUserGeneralAccountItems);
+        PasswordItemsListViewAdapter userSoftwareItemsAdapter =
+                new PasswordItemsListViewAdapter(getActivity(), mUserSoftwareItems);
+        PasswordItemsListViewAdapter userWebsiteItemsAdapter =
+                new PasswordItemsListViewAdapter(getActivity(), mUserWebsiteItems);
 
-        lvAllUserItems.setAdapter(allUserItemsAdapter);
+        // placing text into txtSearch triggers onTextChanged event that sets lvAllUserItems adapter
+        txtSearch.setText(mSearchText);
+
         lvCreditCards.setAdapter(userCreditCardItemsAdapter);
         lvGeneralAccounts.setAdapter(userGeneralAccountItemsAdapter);
         lvSoftware.setAdapter(userSoftwareItemsAdapter);
@@ -269,19 +315,18 @@ public class PasswordItemsListFragment extends Fragment
         MyLog.i("PasswordItemsListFragment", "onResume()");
         // Restore preferences
         SharedPreferences passwordsSavedState = getActivity()
-                .getSharedPreferences(MySettings.PASSWORDS_SAVED_STATE, 0);
+                .getSharedPreferences(MySettings.PASSWORDS_SAVED_STATES, 0);
         mActiveListView = passwordsSavedState.getInt(MySettings.ARG_ACTIVE_LIST_VIEW, clsItemTypes.CREDIT_CARDS);
         MainActivity.setActiveFragmentID(MySettings.FRAG_ITEMS_LIST);
         setupDisplay(mActiveListView);
         MainActivity.sortPasswordsData();
+        if (mActiveListView == clsItemTypes.ALL_ITEMS) {
+            mSearchText = passwordsSavedState.getString(ARG_SEARCH_TEXT, "");
+            txtSearch.setText(mSearchText);
+        }
+
         updateUI();
         super.onResume();
-    }
-
-    @Override
-    public void onSaveInstanceState(Bundle outState) {
-        super.onSaveInstanceState(outState);
-        MyLog.i("PasswordItemsListFragment", "onSaveInstanceState()");
     }
 
     @Override
@@ -289,10 +334,11 @@ public class PasswordItemsListFragment extends Fragment
         super.onPause();
         MyLog.i("PasswordItemsListFragment", "onPause()");
         SharedPreferences passwordsSavedState = getActivity()
-                .getSharedPreferences(MySettings.PASSWORDS_SAVED_STATE, 0);
+                .getSharedPreferences(MySettings.PASSWORDS_SAVED_STATES, 0);
         SharedPreferences.Editor editor = passwordsSavedState.edit();
         editor.putInt(MySettings.ARG_ACTIVE_FRAGMENT, MySettings.FRAG_ITEMS_LIST);
         editor.putInt(MySettings.ARG_ACTIVE_LIST_VIEW, mActiveListView);
+        editor.putString(ARG_SEARCH_TEXT, mSearchText);
         // Commit the edits!
         editor.commit();
     }
@@ -398,6 +444,7 @@ public class PasswordItemsListFragment extends Fragment
                 lvWebsites.setVisibility(View.GONE);
                 lvSoftware.setVisibility(View.GONE);
                 mActiveListView = clsItemTypes.ALL_ITEMS;
+                txtSearch.setText("");
                 break;
         }
     }

@@ -27,10 +27,10 @@ import lbconsulting.com.passwords.classes.clsPasswordItem;
 /**
  * A fragment that allows the editing of a Credit Card
  */
-public class EditGeneralAccountFragment extends Fragment {
+public class EditWebsiteFragment extends Fragment implements TextWatcher {
 
     private static final String ARG_IS_DIRTY = "isDirty";
-    private static final String ARG_ACCOUNT_NUMBER = "accountNumber";
+    //private static final String ARG_ACCOUNT_NUMBER = "accountNumber";
     private static final String ARG_IS_NEW_PASSWORD_ITEM = "isNewPasswordItem";
 
     // fragment state variables
@@ -38,33 +38,33 @@ public class EditGeneralAccountFragment extends Fragment {
     private boolean mNameValidated = false;
     private String mOriginalItemName = "";
     private boolean mIsItemNameDirty = false;
-    private String mAccountNumber = "";
+    private String mWebsiteURL = "";
     private boolean mIsNewPasswordItem = false;
 
     private clsPasswordItem mPasswordItem;
 
     private EditText txtItemName;
-    private EditText txtAccountNumber;
-    private EditText txtPrimaryPhoneNumber;
-    private EditText txtAlternatePhoneNumber;
+    private EditText txtWebsiteURL;
+    private EditText txtUserID;
+    private EditText txtPassword;
 
 
-    public static EditGeneralAccountFragment newInstance(boolean isNewPasswordItem) {
-        EditGeneralAccountFragment fragment = new EditGeneralAccountFragment();
+    public static EditWebsiteFragment newInstance(boolean isNewPasswordItem) {
+        EditWebsiteFragment fragment = new EditWebsiteFragment();
         Bundle args = new Bundle();
         args.putBoolean(ARG_IS_NEW_PASSWORD_ITEM, isNewPasswordItem);
         fragment.setArguments(args);
         return fragment;
     }
 
-    public EditGeneralAccountFragment() {
+    public EditWebsiteFragment() {
         // Required empty public constructor
     }
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        MyLog.i("EditGeneralAccountFragment", "onCreate()");
+        MyLog.i("EditWebsiteFragment", "onCreate()");
         if (getArguments() != null) {
             mIsNewPasswordItem = getArguments().getBoolean(ARG_IS_NEW_PASSWORD_ITEM);
             mPasswordItem = MainActivity.getActivePasswordItem();
@@ -78,22 +78,10 @@ public class EditGeneralAccountFragment extends Fragment {
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
-        MyLog.i("EditGeneralAccountFragment", "onCreateView()");
-        View rootView = inflater.inflate(R.layout.frag_edit_general_account, container, false);
+        MyLog.i("EditWebsiteFragment", "onCreateView()");
+        View rootView = inflater.inflate(R.layout.frag_edit_website, container, false);
 
         txtItemName = (EditText) rootView.findViewById(R.id.txtItemName);
-        txtItemName.setOnFocusChangeListener(new View.OnFocusChangeListener() {
-
-            @Override
-            public void onFocusChange(View v, boolean hasFocus) {
-                if (!hasFocus) {
-                    if (mIsItemNameDirty && !mNameValidated) {
-                        validateItemName();
-                    }
-                }
-            }
-        });
-
         txtItemName.addTextChangedListener(new TextWatcher() {
 
             @Override
@@ -111,81 +99,26 @@ public class EditGeneralAccountFragment extends Fragment {
 
             }
         });
-
-        txtAccountNumber = (EditText) rootView.findViewById(R.id.txtKeyCode);
-        txtAccountNumber.addTextChangedListener(new TextWatcher() {
-            @Override
-            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
-
-            }
-
-            @Override
-            public void onTextChanged(CharSequence s, int start, int before, int count) {
-                mIsDirty = true;
-            }
-
-            @Override
-            public void afterTextChanged(Editable s) {
-
-            }
-        });
-
-        txtPrimaryPhoneNumber = (EditText) rootView.findViewById(R.id.txtPrimaryPhoneNumber);
-        txtPrimaryPhoneNumber.setOnFocusChangeListener(new View.OnFocusChangeListener() {
+        txtItemName.setOnFocusChangeListener(new View.OnFocusChangeListener() {
 
             @Override
             public void onFocusChange(View v, boolean hasFocus) {
                 if (!hasFocus) {
-                    String formattedPrimaryPhoneNumber = clsFormattingMethods
-                            .formatPhoneNumber(txtPrimaryPhoneNumber.getText().toString().trim());
-                    txtPrimaryPhoneNumber.setText(formattedPrimaryPhoneNumber);
+                    if (mIsItemNameDirty && !mNameValidated) {
+                        validateItemName();
+                    }
                 }
             }
         });
-        txtPrimaryPhoneNumber.addTextChangedListener(new TextWatcher() {
-            @Override
-            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
 
-            }
+        txtWebsiteURL = (EditText) rootView.findViewById(R.id.txtWebsiteURL);
+        txtWebsiteURL.addTextChangedListener(this);
 
-            @Override
-            public void onTextChanged(CharSequence s, int start, int before, int count) {
-                mIsDirty = true;
-            }
+        txtUserID = (EditText) rootView.findViewById(R.id.txtUserID);
+        txtUserID.addTextChangedListener(this);
 
-            @Override
-            public void afterTextChanged(Editable s) {
-
-            }
-        });
-        txtAlternatePhoneNumber = (EditText) rootView.findViewById(R.id.txtAlternatePhoneNumber);
-        txtAlternatePhoneNumber.setOnFocusChangeListener(new View.OnFocusChangeListener() {
-
-            @Override
-            public void onFocusChange(View v, boolean hasFocus) {
-                if (!hasFocus) {
-                    String formattedAlternatePhoneNumber = clsFormattingMethods
-                            .formatPhoneNumber(txtAlternatePhoneNumber.getText().toString().trim());
-                    txtPrimaryPhoneNumber.setText(formattedAlternatePhoneNumber);
-                }
-            }
-        });
-        txtAlternatePhoneNumber.addTextChangedListener(new TextWatcher() {
-            @Override
-            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
-
-            }
-
-            @Override
-            public void onTextChanged(CharSequence s, int start, int before, int count) {
-                mIsDirty = true;
-            }
-
-            @Override
-            public void afterTextChanged(Editable s) {
-
-            }
-        });
+        txtPassword = (EditText) rootView.findViewById(R.id.txtPassword);
+        txtPassword.addTextChangedListener(this);
         return rootView;
     }
 
@@ -205,7 +138,6 @@ public class EditGeneralAccountFragment extends Fragment {
                 } else {
                     // the item name does not exist
                     mIsDirty = true;
-                    //MainActivity.sortPasswordsData();
                 }
             }
         }
@@ -214,12 +146,11 @@ public class EditGeneralAccountFragment extends Fragment {
     @Override
     public void onActivityCreated(@Nullable Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
-        MyLog.i("EditGeneralAccountFragment", "onActivityCreated()");
+        MyLog.i("EditWebsiteFragment", "onActivityCreated()");
         // Restore saved state
         if (savedInstanceState != null) {
-            MyLog.i("EditGeneralAccountFragment", "onActivityCreated(): savedInstanceState");
+            MyLog.i("EditWebsiteFragment", "onActivityCreated(): savedInstanceState");
             mIsDirty = savedInstanceState.getBoolean(ARG_IS_DIRTY);
-            mAccountNumber = savedInstanceState.getString(ARG_ACCOUNT_NUMBER);
             mPasswordItem = MainActivity.getActivePasswordItem();
         }
     }
@@ -228,22 +159,20 @@ public class EditGeneralAccountFragment extends Fragment {
     @Override
     public void onSaveInstanceState(Bundle outState) {
         super.onSaveInstanceState(outState);
-        MyLog.i("EditGeneralAccountFragment", "onSaveInstanceState()");
-
+        MyLog.i("EditWebsiteFragment", "onSaveInstanceState()");
         outState.putBoolean(ARG_IS_DIRTY, mIsDirty);
-        outState.putString(ARG_ACCOUNT_NUMBER, mAccountNumber);
     }
 
     @Override
     public void onResume() {
         super.onResume();
-        MyLog.i("EditGeneralAccountFragment", "onResume()");
+        MyLog.i("EditWebsiteFragment", "onResume()");
         MainActivity.setActiveFragmentID(MySettings.FRAG_EDIT_GENERAL_ACCOUNT);
         updateUI();
     }
 
     public void onEvent(clsEvents.updateUI event) {
-        MyLog.i("EditGeneralAccountFragment", "onEvent.updateUI()");
+        MyLog.i("EditWebsiteFragment", "onEvent.updateUI()");
         mOriginalItemName = "";
         updateUI();
     }
@@ -256,12 +185,9 @@ public class EditGeneralAccountFragment extends Fragment {
                 mOriginalItemName = mPasswordItem.getName();
             }
 
-            txtAccountNumber.setText((mPasswordItem.getGeneralAccountNumber()));
-
-            String formattedPrimaryPhoneNumber = clsFormattingMethods.formatPhoneNumber(mPasswordItem.getPrimaryPhoneNumber());
-            String formattedAlternatePhoneNumber = clsFormattingMethods.formatPhoneNumber(mPasswordItem.getAlternatePhoneNumber());
-            txtPrimaryPhoneNumber.setText(formattedPrimaryPhoneNumber);
-            txtAlternatePhoneNumber.setText(formattedAlternatePhoneNumber);
+            txtWebsiteURL.setText((mPasswordItem.getWebsiteURL()));
+            txtUserID.setText((mPasswordItem.getWebsiteUserID()));
+            txtPassword.setText((mPasswordItem.getWebsitePassword()));
             mIsDirty=false;
         }
     }
@@ -269,14 +195,10 @@ public class EditGeneralAccountFragment extends Fragment {
     private void updatePasswordItem() {
 
         mPasswordItem.setName(txtItemName.getText().toString().trim());
-        mPasswordItem.setGeneralAccountNumber(txtAccountNumber.getText().toString().trim());
+        mPasswordItem.setWebsiteURL(txtWebsiteURL.getText().toString().trim());
+        mPasswordItem.setWebsiteUserID(txtUserID.getText().toString().trim());
+        mPasswordItem.setWebsitePassword(txtPassword.getText().toString().trim());
 
-        String unformattedPrimaryPhoneNumber = clsFormattingMethods
-                .unFormatPhoneNumber(txtPrimaryPhoneNumber.getText().toString());
-        String unformattedAlternatePhoneNumber = clsFormattingMethods
-                .unFormatPhoneNumber(txtAlternatePhoneNumber.getText().toString());
-        mPasswordItem.setPrimaryPhoneNumber(unformattedPrimaryPhoneNumber);
-        mPasswordItem.setAlternatePhoneNumber(unformattedAlternatePhoneNumber);
         mIsDirty = false;
 
     }
@@ -316,9 +238,9 @@ public class EditGeneralAccountFragment extends Fragment {
 
             case R.id.action_clear:
                 //Toast.makeText(getActivity(), "TO COME: action_clear", Toast.LENGTH_SHORT).show();
-                txtAccountNumber.setText("");
-                txtPrimaryPhoneNumber.setText("");
-                txtAlternatePhoneNumber.setText("");
+                txtWebsiteURL.setText("");
+                txtUserID.setText("");
+                txtPassword.setText("");
                 mIsDirty = true;
                 return true;
 
@@ -337,7 +259,7 @@ public class EditGeneralAccountFragment extends Fragment {
     @Override
     public void onPause() {
         super.onPause();
-        MyLog.i("EditGeneralAccountFragment", "onPause()");
+        MyLog.i("EditWebsiteFragment", "onPause()");
         if (mIsDirty) {
             EventBus.getDefault().post(new clsEvents.isDirty());
             updatePasswordItem();
@@ -348,11 +270,25 @@ public class EditGeneralAccountFragment extends Fragment {
     @Override
     public void onDestroy() {
         super.onDestroy();
-        MyLog.i("EditGeneralAccountFragment", "onDestroy()");
+        MyLog.i("EditWebsiteFragment", "onDestroy()");
         EventBus.getDefault().unregister(this);
         getActivity().getActionBar().setDisplayHomeAsUpEnabled(false);
 
     }
 
 
+    @Override
+    public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+
+    }
+
+    @Override
+    public void onTextChanged(CharSequence s, int start, int before, int count) {
+        mIsDirty = true;
+    }
+
+    @Override
+    public void afterTextChanged(Editable s) {
+
+    }
 }

@@ -34,17 +34,17 @@
                     android:layout_weight="8"
                     android:layout_height="wrap_content"
                     style="@style/tvPasswordStyle"
-                    android:text="Account:" />
+                    android:text="URL:" />
 
                 <EditText
-                    android:id="@+id/txtKeyCode"
+                    android:id="@+id/txtWebsiteURL"
                     android:layout_width="0dp"
                     android:layout_weight="20"
                     android:layout_height="wrap_content"
-                    android:inputType="text"
+                    android:inputType="textUri"
                     android:gravity="left"
                     style="@style/txtPasswordStyle"
-                    android:hint="Account Number" />
+                    android:hint="Website URL" />
 
 
             </LinearLayout>
@@ -59,16 +59,16 @@
                     android:layout_weight="8"
                     android:layout_height="wrap_content"
                     style="@style/tvPasswordStyle"
-                    android:text="Primary:" />
+                    android:text="User ID:" />
 
                 <EditText
-                    android:id="@+id/txtPrimaryPhoneNumber"
+                    android:id="@+id/txtUserID"
                     android:layout_width="0dp"
                     android:layout_weight="20"
                     android:layout_height="wrap_content"
-                    android:inputType="phone"
+                    android:inputType="textNoSuggestions"
                     style="@style/txtPasswordStyle"
-                    android:hint="Primary Phone Number" />
+                    android:hint="User ID" />
 
             </LinearLayout>
 
@@ -82,16 +82,16 @@
                     android:layout_weight="8"
                     android:layout_height="wrap_content"
                     style="@style/tvPasswordStyle"
-                    android:text="Alternate:" />
+                    android:text="Password" />
 
                 <EditText
-                    android:id="@+id/txtAlternatePhoneNumber"
+                    android:id="@+id/txtPassword"
                     android:layout_width="0dp"
                     android:layout_weight="20"
                     android:layout_height="wrap_content"
-                    android:inputType="phone"
+                    android:inputType="textNoSuggestions"
                     style="@style/txtPasswordStyle"
-                    android:hint="Alternate Phone Number" />
+                    android:hint="Password" />
 
             </LinearLayout>
 

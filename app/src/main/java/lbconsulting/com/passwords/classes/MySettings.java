@@ -1,21 +1,24 @@
 package lbconsulting.com.passwords.classes;
 
+import android.content.Context;
+import android.content.SharedPreferences;
+
 import java.io.UnsupportedEncodingException;
 import java.security.NoSuchAlgorithmException;
-import java.util.ArrayList;
-import java.util.List;
+
+import lbconsulting.com.passwords.activities.MainActivity;
 
 /**
  * Created by Loren on 3/5/2015.
  */
 public class MySettings {
 
-    public static final String PASSWORDS_SAVED_STATE = "PasswordsSavedState";
+    public static final String PASSWORDS_SAVED_STATES = "PasswordsSavedState";
     public static final String ARG_ACTIVE_LIST_VIEW = "arg_active_list_view";
-    public static final String ARG_ACTIVE_USER_ID = "arg_active_user_id";
+    public static final String SETTING_ACTIVE_USER_ID = "arg_active_user_id";
     public static final String ARG_ITEM_ID = "arg_item_id";
+    public static final String SETTING_DROPBOX_FOLDER_NAME = "dropboxFolderName";
 
-    //                                         "/BakerShare/LABPasswords"
     private static final String DROPBOX_PATH = "/BakerShare/LABPasswords";
 
     public static String getDropboxPath() {
@@ -35,6 +38,8 @@ public class MySettings {
     public static final int FRAG_EDIT_GENERAL_ACCOUNT = 32;
     public static final int FRAG_EDIT_SOFTWARE = 33;
     public static final int FRAG_EDIT_WEBSITE = 34;
+    public static final int FRAG_SETTINGS = 40;
+
 
 
     public static final String[] CreditCardNames = {"American Express", "Diners Club", "Discover", "JCB", "MasterCard", "VISA"};
@@ -47,10 +52,54 @@ public class MySettings {
     public static final int MASTERCARD = 4;
     public static final int VISA = 5;
 
+    private static Context mContext;
+
+    public static void setContext(Context context) {
+        mContext = context;
+    }
+
+    //public static final String SETTING_USER_LIST = "setting_user_list";
 
     public static int getActiveUserID() {
-        // TODO: 3/9/2015 active UserID set from setting activity
-        return 1;
+        SharedPreferences passwordsSavedState =
+                mContext.getSharedPreferences(PASSWORDS_SAVED_STATES, 0);
+
+        return passwordsSavedState.getInt(SETTING_ACTIVE_USER_ID, -1);
+    }
+
+    public static void setActiveUserID(int userID){
+        SharedPreferences passwordsSavedState =
+                mContext.getSharedPreferences(PASSWORDS_SAVED_STATES, 0);
+        SharedPreferences.Editor editor = passwordsSavedState.edit();
+        editor.putInt(SETTING_ACTIVE_USER_ID, userID);
+        editor.commit();
+    }
+
+    public static clsUsers getActiveUser() {
+        clsUsers result = null;
+        int activeUserID = getActiveUserID();
+        if (activeUserID > 0) {
+            for (clsUsers user : MainActivity.getPasswordsData().getUsers()) {
+                if (user.getUserID() == activeUserID) {
+                    result = user;
+                }
+            }
+        }
+        return result;
+    }
+
+    public static String getDropboxFolderName() {
+        SharedPreferences passwordsSavedState =
+                mContext.getSharedPreferences(PASSWORDS_SAVED_STATES, 0);
+        return passwordsSavedState.getString(SETTING_DROPBOX_FOLDER_NAME, "");
+    }
+
+    public static void setDropboxFolderName(String dropboxFolderName) {
+        SharedPreferences passwordsSavedState =
+                mContext.getSharedPreferences(PASSWORDS_SAVED_STATES, 0);
+        SharedPreferences.Editor editor = passwordsSavedState.edit();
+        editor.putString(SETTING_DROPBOX_FOLDER_NAME, dropboxFolderName);
+        editor.commit();
     }
 
     public static class Credentials {

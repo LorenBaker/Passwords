@@ -4,6 +4,9 @@ package lbconsulting.com.passwords.classes;
  * Created by Loren on 3/8/2015.
  */
 public class clsUsers {
+
+    private int UserID;
+    private String UserName;
     public int getUserID() {
         return UserID;
     }
@@ -20,7 +23,8 @@ public class clsUsers {
         UserName = userName;
     }
 
-    private int UserID;
-    private String UserName;
-
+    @Override
+    public String toString() {
+        return UserName;
+    }
 }

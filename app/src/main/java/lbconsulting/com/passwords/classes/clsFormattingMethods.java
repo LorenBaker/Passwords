@@ -9,6 +9,35 @@ import java.util.regex.Pattern;
  * Created by Loren on 3/10/2015.
  */
 public class clsFormattingMethods {
+
+/*    public static String formatKeyCode(String keyCode, int spacing) {
+        String unformatKeyCode = unformatKeyCode(keyCode);
+        String formattedKeyCode = "";
+        int start = 0;
+        int end = spacing;
+        if (unformatKeyCode.length() < spacing) {
+            end = unformatKeyCode.length();
+            formattedKeyCode = unformatKeyCode;
+        } else {
+            formattedKeyCode = unformatKeyCode.substring(start, end);
+            for (int i = spacing; i < unformatKeyCode.length(); i += spacing) {
+                start = i;
+                end = start + spacing;
+                if (end > unformatKeyCode.length()) {
+                    end = unformatKeyCode.length();
+                }
+                formattedKeyCode = formattedKeyCode +" - "+ unformatKeyCode.substring(start, end);
+            }
+        }
+        return formattedKeyCode;
+    }*/
+
+    public static String unformatKeyCode(String keyCode) {
+        String unformattedKeycode = keyCode.replace("-", "");
+        unformattedKeycode = unformattedKeycode.replace(" ", "");
+        return unformattedKeycode;
+    }
+
     public static class creditCard {
         private String cardType = MySettings.UNKNOWN;
         private int cardPosition = Spinner.INVALID_POSITION;
@@ -229,7 +258,13 @@ public class clsFormattingMethods {
             subGroupLength = 1;
         }
 
+        // clean up the provided accountNumber
         accountNumber = accountNumber.trim();
+        accountNumber = accountNumber.replace("-", "");
+        accountNumber = accountNumber.replace(" ", "");
+        String dash = "\u2013";
+        accountNumber = accountNumber.replace(dash, "");
+
         if (accountNumber.isEmpty()) {
             formattedNumber = "";
         } else {
@@ -240,7 +275,7 @@ public class clsFormattingMethods {
                 if (end > accountNumber.length()) {
                     end = accountNumber.length();
                 }
-                formattedNumber = formattedNumber + "-" + accountNumber.substring(i, end);
+                formattedNumber = formattedNumber + dash + accountNumber.substring(i, end);
             }
         }
 
