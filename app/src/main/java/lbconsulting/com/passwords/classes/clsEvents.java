@@ -9,6 +9,11 @@ public class clsEvents {
         }
     }
 
+    public static class readLabPasswordDataComplete {
+        public readLabPasswordDataComplete() {
+        }
+    }
+
     public static class isDirty {
         public isDirty() {
         }

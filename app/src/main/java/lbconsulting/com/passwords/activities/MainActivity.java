@@ -50,6 +50,7 @@ import lbconsulting.com.passwords.fragments.EditCreditCardFragment;
 import lbconsulting.com.passwords.fragments.EditGeneralAccountFragment;
 import lbconsulting.com.passwords.fragments.EditSoftwareFragment;
 import lbconsulting.com.passwords.fragments.EditWebsiteFragment;
+import lbconsulting.com.passwords.fragments.PasswordFragment;
 import lbconsulting.com.passwords.fragments.PasswordItemDetailFragment;
 import lbconsulting.com.passwords.fragments.PasswordItemsListFragment;
 import lbconsulting.com.passwords.R;
@@ -67,16 +68,16 @@ public class MainActivity extends FragmentActivity {
     private static DbxFileSystem dbxFs;
 
     private static clsLabPasswords mPasswordsData;
-    private static int mActivePasswordItemID;
+    //private static int mActivePasswordItemID;
     private static int mPreviousPasswordItemID;
 
-    public static int getActivePasswordItemID() {
+/*    public static int getActivePasswordItemID() {
         return mActivePasswordItemID;
     }
 
     public static void setActivePasswordItemID(int activePasswordItemID) {
         mActivePasswordItemID = activePasswordItemID;
-    }
+    }*/
 
     private boolean mArgBoolean;
 
@@ -105,24 +106,24 @@ public class MainActivity extends FragmentActivity {
         return mLastUserID;
     }
 
-/*    private static clsUsers mActiveUser;
-    public static clsUsers getActiveUser(){
-        return mActiveUser;
-    }
-    public static void setNewUser(clsUsers activeUser) {
-        mActiveUser=activeUser;
-    }*/
-    private static int mActivePosition;
+    /*    private static clsUsers mActiveUser;
+        public static clsUsers getActiveUser(){
+            return mActiveUser;
+        }
+        public static void setNewUser(clsUsers activeUser) {
+            mActiveUser=activeUser;
+        }*/
+/*    private static int mActivePosition;
 
     public static void setActivePosition(int position) {
         mActivePosition = position;
-    }
+    }*/
 
-    private static int mActiveFragmentID;
+    //private static int mActiveFragmentID;
 
-    public static void setActiveFragmentID(int activeFragmentID) {
+/*    public static void setActiveFragmentID(int activeFragmentID) {
         mActiveFragmentID = activeFragmentID;
-    }
+    }*/
 
     private static android.app.ActionBar mActionBar;
 
@@ -130,7 +131,7 @@ public class MainActivity extends FragmentActivity {
         mActionBar.setTitle(title);
     }
 
-    private boolean mIsDirty = false;
+    private static boolean mIsDirty = false;
 
     private boolean mTwoPane;
     private FrameLayout mFragment_container;
@@ -148,10 +149,15 @@ public class MainActivity extends FragmentActivity {
 
     public static clsPasswordItem getActivePasswordItem() {
         clsPasswordItem result = null;
-        for (clsPasswordItem item : mPasswordsData.getPasswordItems()) {
-            if (item.getID() == mActivePasswordItemID) {
-                result = item;
-                break;
+        if (mPasswordsData != null && mPasswordsData.getPasswordItems() != null) {
+            int activePasswordItemID = MySettings.getActivePasswordItemID();
+            if (activePasswordItemID > -1) {
+                for (clsPasswordItem item : mPasswordsData.getPasswordItems()) {
+                    if (item.getID() == activePasswordItemID) {
+                        result = item;
+                        break;
+                    }
+                }
             }
         }
         return result;
@@ -163,7 +169,8 @@ public class MainActivity extends FragmentActivity {
         for (clsPasswordItem item : mPasswordsData.getPasswordItems()) {
             if (item.getID() == itemID) {
                 mPasswordsData.getPasswordItems().remove(index);
-                mActivePasswordItemID = mPreviousPasswordItemID;
+                //mActivePasswordItemID = mPreviousPasswordItemID;
+                MySettings.setActivePasswordItemID(mPreviousPasswordItemID);
                 result = true;
                 break;
             }
@@ -173,10 +180,11 @@ public class MainActivity extends FragmentActivity {
     }
 
     public static clsPasswordItem createNewPasswordItem() {
-        mPreviousPasswordItemID = mActivePasswordItemID;
+        mPreviousPasswordItemID = MySettings.getActivePasswordItemID();
         clsPasswordItem newItem = new clsPasswordItem(getNextPasswordItemID(), MySettings.getActiveUserID());
         mPasswordsData.getPasswordItems().add(newItem);
-        mActivePasswordItemID = newItem.getID();
+        //mActivePasswordItemID = newItem.getID();
+        MySettings.setActivePasswordItemID(newItem.getID());
         return newItem;
     }
 
@@ -190,7 +198,7 @@ public class MainActivity extends FragmentActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         MyLog.i("MainActivity", "onCreate()");
-        setContentView(R.layout.activity_password_items_list);
+        setContentView(R.layout.activity_main);
         EventBus.getDefault().register(this);
         MySettings.setContext(this);
 
@@ -217,11 +225,11 @@ public class MainActivity extends FragmentActivity {
         mDbxAcctMgr = DbxAccountManager.getInstance(getApplicationContext(), APP_KEY, APP_SECRET);
 
         // get the active fragment ID
-        SharedPreferences passwordsSavedState =
+/*        SharedPreferences passwordsSavedState =
                 getSharedPreferences(MySettings.PASSWORDS_SAVED_STATES, 0);
         mActiveFragmentID = passwordsSavedState
                 .getInt(MySettings.ARG_ACTIVE_FRAGMENT, MySettings.FRAG_ITEMS_LIST);
-        showFragments();
+        showFragments();*/
 
     }
 
@@ -262,7 +270,7 @@ public class MainActivity extends FragmentActivity {
                             PasswordItemsListFragment.newInstance())
                     .commit();
 
-            switch (mActiveFragmentID) {
+            switch (MySettings.getActiveFragmentID()) {
 
                 case MySettings.FRAG_ITEM_DETAIL:
                     //TODO: TwoPain: add to backstack FRAG_ITEM_DETAIL
@@ -296,7 +304,7 @@ public class MainActivity extends FragmentActivity {
 
         } else {
             // Single pane display
-            switch (mActiveFragmentID) {
+            switch (MySettings.getActiveFragmentID()) {
                 case MySettings.FRAG_ITEMS_LIST:
                     clearBackStack();
                     fm.beginTransaction()
@@ -354,6 +362,14 @@ public class MainActivity extends FragmentActivity {
                             .commit();
                     break;
 
+                case MySettings.FRAG_APP_PASSWORD:
+                    fm.beginTransaction()
+                            .replace(R.id.fragment_container,
+                                    PasswordFragment.newInstance(mArgBoolean), "FRAG_SETTINGS")
+                            .addToBackStack("FRAG_SETTINGS")
+                            .commit();
+                    break;
+
             }
         }
     }
@@ -367,11 +383,30 @@ public class MainActivity extends FragmentActivity {
 
     public void onEvent(clsEvents.PopBackStack event) {
         FragmentManager fm = getSupportFragmentManager();
-        fm.popBackStack();
+        MyLog.i("MainActivity", "onEvent: BackStackEntryCount=" + fm.getBackStackEntryCount());
+        if (fm.getBackStackEntryCount() < 2 && MySettings.getActiveFragmentID() != MySettings.FRAG_ITEMS_LIST) {
+            MySettings.setActiveFragmentID(MySettings.FRAG_ITEMS_LIST);
+            showFragments();
+        } else {
+            fm.popBackStack();
+        }
+
+    }
+
+    @Override
+    public void onBackPressed() {
+        FragmentManager fm = getSupportFragmentManager();
+        if (fm.getBackStackEntryCount() < 2 && MySettings.getActiveFragmentID() != MySettings.FRAG_ITEMS_LIST) {
+            MySettings.setActiveFragmentID(MySettings.FRAG_ITEMS_LIST);
+            showFragments();
+        } else {
+            super.onBackPressed();
+        }
     }
 
     public void onEvent(clsEvents.replaceFragment event) {
-        mActiveFragmentID = event.getFragmentID();
+        //mActiveFragmentID = event.getFragmentID();
+        MySettings.setActiveFragmentID(event.getFragmentID());
         mArgBoolean = event.getIsNewPasswordItem();
         showFragments();
     }
@@ -386,7 +421,7 @@ public class MainActivity extends FragmentActivity {
         MyLog.i("MainActivity", "onCreateOptionsMenu()");
         getMenuInflater().inflate(R.menu.menu_main_activity, menu);
 
-        if (mActiveFragmentID == MySettings.FRAG_SETTINGS) {
+        if (MySettings.getActiveFragmentID() == MySettings.FRAG_SETTINGS) {
             menu.findItem(R.id.action_settings).setVisible(false);
         } else {
             menu.findItem(R.id.action_settings).setVisible(true);
@@ -407,7 +442,8 @@ public class MainActivity extends FragmentActivity {
             new readLabPasswordData().execute();
             return true;
         } else if (id == R.id.action_settings) {
-            mActiveFragmentID = MySettings.FRAG_SETTINGS;
+            //mActiveFragmentID = MySettings.FRAG_SETTINGS;
+            MySettings.setActiveFragmentID(MySettings.FRAG_SETTINGS);
             showFragments();
             // Toast.makeText(this, "TO COME: action_settings", Toast.LENGTH_SHORT).show();
             return true;
@@ -435,6 +471,8 @@ public class MainActivity extends FragmentActivity {
         if (mIsDirty) {
             encryptAndSaveData();
         }
+        //MySettings.setActivePasswordItemID(mActivePasswordItemID);
+
         super.onPause();
     }
 
@@ -457,9 +495,18 @@ public class MainActivity extends FragmentActivity {
             if (btnLinkToDropbox != null) {
                 btnLinkToDropbox.setVisibility(View.GONE);
             }
+
+            //mActivePasswordItemID = MySettings.getActivePasswordItemID();
             try {
                 dbxFs = DbxFileSystem.forAccount(mDbxAcctMgr.getLinkedAccount());
-                new readLabPasswordData().execute();
+                String appPassword = MySettings.getAppPassword();
+                if (appPassword.equals(MySettings.NOT_AVAILABLE)) {
+                    MySettings.setActiveFragmentID(MySettings.FRAG_APP_PASSWORD);
+                    mArgBoolean = true;
+                } else {
+                    readLabPasswordDataAsync();
+                }
+                showFragments();
             } catch (DbxException.Unauthorized unauthorized) {
                 MyLog.e("MainActivity", "onResume: DbxException.Unauthorized");
                 unauthorized.printStackTrace();
@@ -478,10 +525,14 @@ public class MainActivity extends FragmentActivity {
         }
     }
 
-    private void readData() {
+    public static void readLabPasswordDataAsync() {
+        new readLabPasswordData().execute();
+    }
+
+    private static void readData() {
         try {
 
-            DbxPath path = new DbxPath(MySettings.getDropboxPath());
+            DbxPath path = new DbxPath(MySettings.getDropboxFolderName());
             DbxPath filePath = null;
             String encryptedContents = "";
 
@@ -506,7 +557,7 @@ public class MainActivity extends FragmentActivity {
 
             if (!pathFound) {
                 MyLog.e("MainActivity", "readData FAILED; path: "
-                        + MySettings.getDropboxPath() + " does not exist!");
+                        + MySettings.getDropboxFolderName() + " does not exist!");
                 return;
             }
 
@@ -515,7 +566,7 @@ public class MainActivity extends FragmentActivity {
                 DbxFile jsonDataFile = null;
                 try {
                     jsonDataFile = dbxFs.open(filePath);
-                    MyLog.i("MainActivity", "readData: jsonDataFile.getSyncStatus = " + jsonDataFile.getSyncStatus());
+                    MyLog.d("MainActivity", "readData: jsonDataFile.getSyncStatus = " + jsonDataFile.getSyncStatus());
                     encryptedContents = jsonDataFile.readString();
 
                     // TODO: 3/9/2015 Check that this is the correct place to add this file listener.
@@ -660,7 +711,7 @@ public class MainActivity extends FragmentActivity {
     }
 
 
-    public class readLabPasswordData extends AsyncTask<Void, Void, Void> {
+    public static class readLabPasswordData extends AsyncTask<Void, Void, Void> {
         @Override
         protected void onPreExecute() {
             super.onPreExecute();
@@ -677,9 +728,14 @@ public class MainActivity extends FragmentActivity {
         @Override
         protected void onPostExecute(Void aVoid) {
             super.onPostExecute(aVoid);
+            EventBus.getDefault().post(new clsEvents.readLabPasswordDataComplete());
             if (mPasswordsData != null) {
                 MyLog.i("readLabPasswordData", "onPostExecute: mPasswordsData not null.");
                 EventBus.getDefault().post(new clsEvents.updateUI());
+                // get the active fragment ID
+/*                int activeFragmentID = MySettings.getActiveFragmentID();
+                EventBus.getDefault().post(new clsEvents.replaceFragment(-1, activeFragmentID, false));*/
+
                 clsUsers activeUser = mPasswordsData.getUser(MySettings.getActiveUserID());
                 if (activeUser != null) {
                     // TODO: 3/9/2015 Implement plurals

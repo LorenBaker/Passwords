@@ -57,7 +57,7 @@ public class PasswordItemsListFragment extends Fragment
 
     private int mActiveListView = clsItemTypes.CREDIT_CARDS;
     private String mSearchText;
-    private String ARG_SEARCH_TEXT = "searchText";
+
 
     //private int mActiveUserID;
     private ArrayList<clsPasswordItem> mAllItems;
@@ -95,13 +95,7 @@ public class PasswordItemsListFragment extends Fragment
     public void onActivityCreated(@Nullable Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
         MyLog.i("PasswordItemsListFragment", "onActivityCreated()");
-        if (savedInstanceState != null) {
-            mSearchText = savedInstanceState.getString(ARG_SEARCH_TEXT);
-        }
-
-/*        SharedPreferences passwordsSavedState =
-                getActivity().getSharedPreferences(MySettings.PASSWORDS_SAVED_STATES, 0);
-        mSearchText = passwordsSavedState.getString(ARG_SEARCH_TEXT, "");*/
+        mSearchText = MySettings.getSearchText();
     }
 
 
@@ -314,17 +308,16 @@ public class PasswordItemsListFragment extends Fragment
     public void onResume() {
         MyLog.i("PasswordItemsListFragment", "onResume()");
         // Restore preferences
-        SharedPreferences passwordsSavedState = getActivity()
-                .getSharedPreferences(MySettings.PASSWORDS_SAVED_STATES, 0);
-        mActiveListView = passwordsSavedState.getInt(MySettings.ARG_ACTIVE_LIST_VIEW, clsItemTypes.CREDIT_CARDS);
-        MainActivity.setActiveFragmentID(MySettings.FRAG_ITEMS_LIST);
+
+        mActiveListView = MySettings.getActiveListViewID();
+        MySettings.setActiveFragmentID(MySettings.FRAG_ITEMS_LIST);
+        MySettings.setActivePasswordItemID(-1);
         setupDisplay(mActiveListView);
         MainActivity.sortPasswordsData();
         if (mActiveListView == clsItemTypes.ALL_ITEMS) {
-            mSearchText = passwordsSavedState.getString(ARG_SEARCH_TEXT, "");
+            mSearchText = MySettings.getSearchText();
             txtSearch.setText(mSearchText);
         }
-
         updateUI();
         super.onResume();
     }
@@ -333,14 +326,8 @@ public class PasswordItemsListFragment extends Fragment
     public void onPause() {
         super.onPause();
         MyLog.i("PasswordItemsListFragment", "onPause()");
-        SharedPreferences passwordsSavedState = getActivity()
-                .getSharedPreferences(MySettings.PASSWORDS_SAVED_STATES, 0);
-        SharedPreferences.Editor editor = passwordsSavedState.edit();
-        editor.putInt(MySettings.ARG_ACTIVE_FRAGMENT, MySettings.FRAG_ITEMS_LIST);
-        editor.putInt(MySettings.ARG_ACTIVE_LIST_VIEW, mActiveListView);
-        editor.putString(ARG_SEARCH_TEXT, mSearchText);
-        // Commit the edits!
-        editor.commit();
+        MySettings.setActiveListViewID(mActiveListView);
+        MySettings.setSearchText(mSearchText);
     }
 
     @Override
@@ -457,8 +444,8 @@ public class PasswordItemsListFragment extends Fragment
             clsPasswordItem item = (clsPasswordItem) tvItemName.getTag();
             if (item != null) {
                 int itemID = item.getID();
-                MainActivity.setActivePasswordItemID(itemID);
-                MainActivity.setActivePosition(position);
+                MySettings.setActivePasswordItemID(itemID);
+                //MainActivity.setActivePosition(position);
                 EventBus.getDefault().post(new clsEvents.replaceFragment(itemID, MySettings.FRAG_ITEM_DETAIL, false));
             }
         }

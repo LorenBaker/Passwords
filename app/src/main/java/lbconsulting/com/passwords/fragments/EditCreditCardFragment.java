@@ -167,7 +167,9 @@ public class EditCreditCardFragment extends Fragment {
         if (getArguments() != null) {
             mIsNewPasswordItem = getArguments().getBoolean(ARG_IS_NEW_PASSWORD_ITEM);
             mPasswordItem = MainActivity.getActivePasswordItem();
-            mSelectedCreditCardTypePosition = findSpinnerPosition(mPasswordItem.getCreditCardAccountNumber());
+            if(mPasswordItem!=null) {
+                mSelectedCreditCardTypePosition = findSpinnerPosition(mPasswordItem.getCreditCardAccountNumber());
+            }
         }
         setHasOptionsMenu(true);
         EventBus.getDefault().register(this);
@@ -569,7 +571,7 @@ public class EditCreditCardFragment extends Fragment {
     public void onResume() {
         super.onResume();
         MyLog.i("EditCreditCardFragment", "onResume()");
-        MainActivity.setActiveFragmentID(MySettings.FRAG_EDIT_CREDIT_CARD);
+        MySettings.setActiveFragmentID(MySettings.FRAG_EDIT_CREDIT_CARD);
         updateUI();
     }
 
@@ -602,13 +604,15 @@ public class EditCreditCardFragment extends Fragment {
     }
 
     private void updateCreditCardUI() {
-        CreditCardParts creditCardParts = new CreditCardParts(mPasswordItem.getCreditCardAccountNumber(), mSelectedCreditCardTypePosition);
-        txtCreditCardPart1.setText(creditCardParts.getPart1());
-        txtCreditCardPart2.setText(creditCardParts.getPart2());
-        txtCreditCardPart3.setText(creditCardParts.getPart3());
-        txtCreditCardPart4.setText(creditCardParts.getPart4());
+        if(mPasswordItem!=null) {
+            CreditCardParts creditCardParts = new CreditCardParts(mPasswordItem.getCreditCardAccountNumber(), mSelectedCreditCardTypePosition);
+            txtCreditCardPart1.setText(creditCardParts.getPart1());
+            txtCreditCardPart2.setText(creditCardParts.getPart2());
+            txtCreditCardPart3.setText(creditCardParts.getPart3());
+            txtCreditCardPart4.setText(creditCardParts.getPart4());
 
-        validateCreditCard();
+            validateCreditCard();
+        }
     }
 
     private void updatePasswordItem() {

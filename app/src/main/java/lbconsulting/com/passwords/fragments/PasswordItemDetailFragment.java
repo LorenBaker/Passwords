@@ -68,6 +68,7 @@ public class PasswordItemDetailFragment extends Fragment implements View.OnClick
         super.onCreate(savedInstanceState);
         MyLog.i("PasswordItemDetailFragment", "onCreate()");
         setHasOptionsMenu(true);
+        EventBus.getDefault().register(this);
     }
 
     @Override
@@ -179,13 +180,19 @@ public class PasswordItemDetailFragment extends Fragment implements View.OnClick
     public void onActivityCreated(@Nullable Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
         MyLog.i("PasswordItemDetailFragment", "onActivityCreated()");
+        getActivity().getActionBar().setDisplayHomeAsUpEnabled(true);
     }
 
     @Override
     public void onResume() {
         super.onResume();
         MyLog.i("PasswordItemDetailFragment", "onResume()");
-        MainActivity.setActiveFragmentID(MySettings.FRAG_ITEM_DETAIL);
+        MySettings.setActiveFragmentID(MySettings.FRAG_ITEM_DETAIL);
+    }
+
+    public void onEvent(clsEvents.updateUI event) {
+        MyLog.i("PasswordItemDetailFragment", "onEvent.updateUI()");
+        updateUI();
     }
 
     @Override
@@ -198,7 +205,7 @@ public class PasswordItemDetailFragment extends Fragment implements View.OnClick
     public void onPause() {
         super.onPause();
         MyLog.i("PasswordItemDetailFragment", "onPause()");
-        if (mIsDirty) {
+        if (mIsDirty && mPasswordItem != null && txtComments != null) {
             mPasswordItem.setComments(txtComments.getText().toString().trim());
         }
     }
@@ -207,6 +214,8 @@ public class PasswordItemDetailFragment extends Fragment implements View.OnClick
     public void onDestroy() {
         super.onDestroy();
         MyLog.i("PasswordItemDetailFragment", "onDestroy()");
+        EventBus.getDefault().unregister(this);
+        getActivity().getActionBar().setDisplayHomeAsUpEnabled(false);
     }
 
     @Override
@@ -222,7 +231,7 @@ public class PasswordItemDetailFragment extends Fragment implements View.OnClick
             // Do Fragment menu item stuff here
             case R.id.action_discard:
                 //Toast.makeText(getActivity(), "TO COME: action_discard", Toast.LENGTH_SHORT).show();
-                MainActivity.deletePasswordItem(MainActivity.getActivePasswordItemID());
+                MainActivity.deletePasswordItem(MySettings.getActivePasswordItemID());
                 EventBus.getDefault().post(new clsEvents.PopBackStack());
                 return true;
 
@@ -255,6 +264,11 @@ public class PasswordItemDetailFragment extends Fragment implements View.OnClick
                         break;
                 }
                 return true;
+
+            case android.R.id.home:
+                EventBus.getDefault().post(new clsEvents.PopBackStack());
+                return true;
+
             default:
                 // Not implemented here
                 return false;

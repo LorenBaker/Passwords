@@ -224,7 +224,7 @@ public class EditSoftwareFragment extends Fragment {
     public void onResume() {
         super.onResume();
         MyLog.i("EditSoftwareFragment", "onResume()");
-        MainActivity.setActiveFragmentID(MySettings.FRAG_EDIT_GENERAL_ACCOUNT);
+        MySettings.setActiveFragmentID(MySettings.FRAG_EDIT_GENERAL_ACCOUNT);
         updateUI();
     }
 

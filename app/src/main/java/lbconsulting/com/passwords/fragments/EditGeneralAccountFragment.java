@@ -238,7 +238,7 @@ public class EditGeneralAccountFragment extends Fragment {
     public void onResume() {
         super.onResume();
         MyLog.i("EditGeneralAccountFragment", "onResume()");
-        MainActivity.setActiveFragmentID(MySettings.FRAG_EDIT_GENERAL_ACCOUNT);
+        MySettings.setActiveFragmentID(MySettings.FRAG_EDIT_GENERAL_ACCOUNT);
         updateUI();
     }
 

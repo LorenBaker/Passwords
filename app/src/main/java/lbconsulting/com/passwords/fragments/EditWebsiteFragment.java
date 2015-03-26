@@ -21,7 +21,6 @@ import lbconsulting.com.passwords.activities.MainActivity;
 import lbconsulting.com.passwords.classes.MyLog;
 import lbconsulting.com.passwords.classes.MySettings;
 import lbconsulting.com.passwords.classes.clsEvents;
-import lbconsulting.com.passwords.classes.clsFormattingMethods;
 import lbconsulting.com.passwords.classes.clsPasswordItem;
 
 /**
@@ -117,7 +116,7 @@ public class EditWebsiteFragment extends Fragment implements TextWatcher {
         txtUserID = (EditText) rootView.findViewById(R.id.txtUserID);
         txtUserID.addTextChangedListener(this);
 
-        txtPassword = (EditText) rootView.findViewById(R.id.txtPassword);
+        txtPassword = (EditText) rootView.findViewById(R.id.txtAppPassword);
         txtPassword.addTextChangedListener(this);
         return rootView;
     }
@@ -167,7 +166,7 @@ public class EditWebsiteFragment extends Fragment implements TextWatcher {
     public void onResume() {
         super.onResume();
         MyLog.i("EditWebsiteFragment", "onResume()");
-        MainActivity.setActiveFragmentID(MySettings.FRAG_EDIT_GENERAL_ACCOUNT);
+        MySettings.setActiveFragmentID(MySettings.FRAG_EDIT_GENERAL_ACCOUNT);
         updateUI();
     }
 
