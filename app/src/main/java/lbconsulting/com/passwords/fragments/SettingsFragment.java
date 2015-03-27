@@ -41,12 +41,13 @@ public class SettingsFragment extends Fragment implements View.OnClickListener {
     private static final String ARG_IS_FIRST_TIME = "isFirstTime";
     private boolean mIsFirstTime = false;
 
-    private TextView tvFirstTimeMessage;
-    private View line;
+/*    private TextView tvFirstTimeMessage;
+    private View line;*/
     private Button btnSelectUser;
     private Button btnCreateNewUser;
     private Button btnEditUserName;
     private Button btnSelectPasswordLongevity;
+    private Button btnSelectDropboxFolder;
 
 
     public static SettingsFragment newInstance(boolean isFirstTime) {
@@ -81,24 +82,26 @@ public class SettingsFragment extends Fragment implements View.OnClickListener {
         MyLog.i("SettingsFragment", "onCreateView()");
         View rootView = inflater.inflate(R.layout.frag_settings, container, false);
 
-        line = (View) rootView.findViewById(R.id.line1);
-        tvFirstTimeMessage = (TextView) rootView.findViewById(R.id.tvFirstTimeMessage);
-        if (!mIsFirstTime) {
+/*        line = (View) rootView.findViewById(R.id.line1);
+        tvFirstTimeMessage = (TextView) rootView.findViewById(R.id.tvFirstTimeMessage);*/
+/*        if (!mIsFirstTime) {
             tvFirstTimeMessage.setVisibility(View.GONE);
             line.setVisibility(View.GONE);
         } else {
             tvFirstTimeMessage.setText("Step 1: Select Dropbox folder.\nStep 2: Create new user.");
             tvFirstTimeMessage.setTypeface(null, Typeface.BOLD);
-        }
+        }*/
         btnSelectUser = (Button) rootView.findViewById(R.id.btnSelectUser);
         btnCreateNewUser = (Button) rootView.findViewById(R.id.btnCreateNewUser);
         btnEditUserName = (Button) rootView.findViewById(R.id.btnEditUserName);
         btnSelectPasswordLongevity = (Button) rootView.findViewById(R.id.btnSelectPasswordLongevity);
+        btnSelectDropboxFolder = (Button) rootView.findViewById(R.id.btnSelectDropboxFolder);
 
         btnSelectUser.setOnClickListener(this);
         btnCreateNewUser.setOnClickListener(this);
         btnEditUserName.setOnClickListener(this);
         btnSelectPasswordLongevity.setOnClickListener(this);
+        btnSelectDropboxFolder.setOnClickListener(this);
 
         return rootView;
     }
@@ -395,6 +398,10 @@ public class SettingsFragment extends Fragment implements View.OnClickListener {
                 });
                 usersDialog = builder.create();
                 usersDialog.show();
+                break;
+
+            case R.id.btnSelectDropboxFolder:
+                EventBus.getDefault().post(new clsEvents.replaceFragment(-1, MySettings.FRAG_DROPBOX_LIST, false));
                 break;
         }
 

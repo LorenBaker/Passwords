@@ -4,20 +4,6 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
-    <TextView
-        android:id="@+id/tvFirstTimeMessage"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:textSize="18dp"
-        android:layout_margin="15dp" />
-
-
-    <View
-        android:id="@+id/line1"
-        android:layout_width="fill_parent"
-        android:layout_height="1dp"
-        android:layout_marginTop="12dp"
-        android:background="@android:color/darker_gray" />
 
 
     <Button
@@ -61,5 +47,13 @@
         android:layout_gravity="center"
         android:layout_marginTop="12dp"
         android:text="Select Password Longevity\n\nCurrent Longevity: 30 min" />
+
+    <Button
+        android:id="@+id/btnSelectDropboxFolder"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:layout_marginTop="12dp"
+        android:text="Select Dropbox Folder\n\nCurrent Folder:\n/BakerShare/LABPasswords" />
 
 </LinearLayout>

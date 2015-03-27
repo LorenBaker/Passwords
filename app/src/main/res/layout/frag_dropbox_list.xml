@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <TextView
+        android:id="@+id/tvFolderName"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        style="@style/tvBoldCenter"
+        android:background="@drawable/rec_genoa_whitesmoke_stroke"
+        android:hint="Folder Name" />
+
+    <ListView
+        android:id="@+id/lvFolders"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"/>
+
+    <TextView
+        android:id="@+id/tvFolderPath"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        style="@style/tvPasswordStyle"
+        android:hint="Folder Path"
+        android:visibility="gone"/>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_margin="15dp"
+        android:background="@color/slategrayLight">
+
+        <Button
+            android:id="@+id/btnCancel"
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:layout_height="wrap_content"
+            style="@android:style/Holo.ButtonBar"
+            android:text="Cancel"/>
+
+        <Button
+            android:id="@+id/btnSelect"
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:layout_height="wrap_content"
+            style="@android:style/Holo.ButtonBar"
+            android:text="Select"/>
+
+        </LinearLayout>
+
+</LinearLayout>

@@ -46,6 +46,7 @@ import lbconsulting.com.passwords.classes.clsItemTypes;
 import lbconsulting.com.passwords.classes.clsLabPasswords;
 import lbconsulting.com.passwords.classes.clsPasswordItem;
 import lbconsulting.com.passwords.classes.clsUsers;
+import lbconsulting.com.passwords.fragments.DropboxListFragment;
 import lbconsulting.com.passwords.fragments.EditCreditCardFragment;
 import lbconsulting.com.passwords.fragments.EditGeneralAccountFragment;
 import lbconsulting.com.passwords.fragments.EditSoftwareFragment;
@@ -367,6 +368,14 @@ public class MainActivity extends FragmentActivity {
                             .replace(R.id.fragment_container,
                                     PasswordFragment.newInstance(mArgBoolean), "FRAG_SETTINGS")
                             .addToBackStack("FRAG_SETTINGS")
+                            .commit();
+                    break;
+
+                case MySettings.FRAG_DROPBOX_LIST:
+                    fm.beginTransaction()
+                            .replace(R.id.fragment_container,
+                                    DropboxListFragment.newInstance(), "FRAG_DROPBOX_LIST")
+                            .addToBackStack("FRAG_DROPBOX_LIST")
                             .commit();
                     break;
 

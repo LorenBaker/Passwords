@@ -43,6 +43,7 @@ public class MySettings {
     public static final int FRAG_EDIT_WEBSITE = 34;
     public static final int FRAG_SETTINGS = 40;
     public static final int FRAG_APP_PASSWORD = 41;
+    public static final int FRAG_DROPBOX_LIST = 42;
 
 
     public static final String[] CreditCardNames = {"American Express", "Diners Club", "Discover", "JCB", "MasterCard", "VISA"};

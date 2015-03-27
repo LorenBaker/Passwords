@@ -80,8 +80,8 @@ public class PasswordFragment extends Fragment implements View.OnClickListener {
         btnOK.setOnClickListener(this);
         btnSelectDropboxFolder.setOnClickListener(this);
 
-        line1 =(View) rootView.findViewById(R.id.line1);
-        line2 =(View) rootView.findViewById(R.id.line2);
+        line1 = (View) rootView.findViewById(R.id.line1);
+        line2 = (View) rootView.findViewById(R.id.line2);
 
         return rootView;
     }
@@ -115,8 +115,9 @@ public class PasswordFragment extends Fragment implements View.OnClickListener {
     }
 
     public void onEvent(clsEvents.readLabPasswordDataComplete event) {
-        EventBus.getDefault().post(new clsEvents.replaceFragment(-1,MySettings.FRAG_ITEMS_LIST,false));
+        EventBus.getDefault().post(new clsEvents.replaceFragment(-1, MySettings.FRAG_ITEMS_LIST, false));
     }
+
     @Override
     public void onPause() {
         super.onPause();
@@ -165,7 +166,8 @@ public class PasswordFragment extends Fragment implements View.OnClickListener {
                 break;
 
             case R.id.btnSelectDropboxFolder:
-                Toast.makeText(getActivity(), "TO COME: btnSelectDropboxFolder", Toast.LENGTH_SHORT).show();
+                EventBus.getDefault().post(new clsEvents.replaceFragment(-1, MySettings.FRAG_DROPBOX_LIST, false));
+                //Toast.makeText(getActivity(), "TO COME: btnSelectDropboxFolder", Toast.LENGTH_SHORT).show();
                 break;
         }
 
