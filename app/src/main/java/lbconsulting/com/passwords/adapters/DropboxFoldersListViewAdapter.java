@@ -5,6 +5,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
+import android.widget.ImageView;
 import android.widget.TextView;
 
 import java.util.ArrayList;
@@ -22,6 +23,7 @@ public class DropboxFoldersListViewAdapter extends ArrayAdapter<clsDbxFolder> {
 
     // View lookup cache
     private static class ViewHolder {
+        ImageView ivFolderIcon;
         TextView tvFolderName;
     }
 
@@ -41,6 +43,7 @@ public class DropboxFoldersListViewAdapter extends ArrayAdapter<clsDbxFolder> {
             viewHolder = new ViewHolder();
             LayoutInflater inflater = (LayoutInflater) mContext.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
             convertView = inflater.inflate(R.layout.row_lv_dropbox_folder, parent, false);
+            viewHolder.ivFolderIcon = (ImageView) convertView.findViewById(R.id.ivFolderIcon);
             viewHolder.tvFolderName = (TextView) convertView.findViewById(R.id.tvFolderName);
             convertView.setTag(viewHolder);
         } else {
@@ -48,8 +51,16 @@ public class DropboxFoldersListViewAdapter extends ArrayAdapter<clsDbxFolder> {
         }
 
         // Populate the data into the template view using the data object
-        viewHolder.tvFolderName.setText(record.toString() + ": " + record.getIconName());
+        viewHolder.tvFolderName.setText(record.toString());
         viewHolder.tvFolderName.setTag(record);
+        // TODO: 3/27/2015 change the color of folder icons to green
+        if (record.getIconName().equals("folder_user")) {
+            viewHolder.ivFolderIcon.setImageResource(R.drawable.ic_folder_user);
+        } else if (record.getIconName().equals("N/A")) {
+            viewHolder.ivFolderIcon.setImageResource(R.drawable.ic_up_arrow);
+        } else {
+            viewHolder.ivFolderIcon.setImageResource(R.drawable.ic_folder);
+        }
 
         // Return the completed view to render on screen
         return convertView;

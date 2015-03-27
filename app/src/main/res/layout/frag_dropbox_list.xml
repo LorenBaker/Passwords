@@ -39,6 +39,7 @@
             android:layout_weight="1"
             android:layout_height="wrap_content"
             style="@android:style/Holo.ButtonBar"
+            android:background="@drawable/rec_genoa_whitesmoke_stroke"
             android:text="Cancel"/>
 
         <Button
@@ -47,6 +48,7 @@
             android:layout_weight="1"
             android:layout_height="wrap_content"
             style="@android:style/Holo.ButtonBar"
+            android:background="@drawable/rec_genoa_whitesmoke_stroke"
             android:text="Select"/>
 
         </LinearLayout>

@@ -8,6 +8,12 @@
     android:paddingBottom="@dimen/list_view_single_row_padding"
     android:paddingLeft="@dimen/list_view_single_row_padding">
 
+    <ImageView
+        android:id="@+id/ivFolderIcon"
+        android:layout_width="32dp"
+        android:layout_height="32dp"
+        android:src="@drawable/ic_folder"/>
+
 
     <TextView
         android:id="@+id/tvFolderName"
