@@ -173,7 +173,7 @@ public class EditCreditCardFragment extends Fragment {
         }
         setHasOptionsMenu(true);
         EventBus.getDefault().register(this);
-        getActivity().getActionBar().setDisplayHomeAsUpEnabled(true);
+
 
     }
 
@@ -554,6 +554,7 @@ public class EditCreditCardFragment extends Fragment {
             mSelectedCreditCardTypePosition = findSpinnerPosition(mPasswordItem.getCreditCardAccountNumber());
         }
         spnCreditCardType.setSelection(mSelectedCreditCardTypePosition);
+        getActivity().getActionBar().setDisplayHomeAsUpEnabled(true);
     }
 
 
@@ -718,6 +719,7 @@ public class EditCreditCardFragment extends Fragment {
             EventBus.getDefault().post(new clsEvents.isDirty());
             updatePasswordItem();
         }
+        getActivity().getActionBar().setDisplayHomeAsUpEnabled(false);
     }
 
 
@@ -726,7 +728,7 @@ public class EditCreditCardFragment extends Fragment {
         super.onDestroy();
         MyLog.i("EditCreditCardFragment", "onDestroy()");
         EventBus.getDefault().unregister(this);
-        getActivity().getActionBar().setDisplayHomeAsUpEnabled(false);
+
 
     }
 

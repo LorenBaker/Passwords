@@ -70,8 +70,6 @@ public class EditWebsiteFragment extends Fragment implements TextWatcher {
         }
         setHasOptionsMenu(true);
         EventBus.getDefault().register(this);
-        getActivity().getActionBar().setDisplayHomeAsUpEnabled(true);
-
     }
 
     @Override
@@ -152,6 +150,7 @@ public class EditWebsiteFragment extends Fragment implements TextWatcher {
             mIsDirty = savedInstanceState.getBoolean(ARG_IS_DIRTY);
             mPasswordItem = MainActivity.getActivePasswordItem();
         }
+        getActivity().getActionBar().setDisplayHomeAsUpEnabled(true);
     }
 
 
@@ -263,6 +262,7 @@ public class EditWebsiteFragment extends Fragment implements TextWatcher {
             EventBus.getDefault().post(new clsEvents.isDirty());
             updatePasswordItem();
         }
+        getActivity().getActionBar().setDisplayHomeAsUpEnabled(false);
     }
 
 
@@ -271,8 +271,6 @@ public class EditWebsiteFragment extends Fragment implements TextWatcher {
         super.onDestroy();
         MyLog.i("EditWebsiteFragment", "onDestroy()");
         EventBus.getDefault().unregister(this);
-        getActivity().getActionBar().setDisplayHomeAsUpEnabled(false);
-
     }
 
 

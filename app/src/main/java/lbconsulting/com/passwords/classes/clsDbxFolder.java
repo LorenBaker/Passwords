@@ -3,9 +3,6 @@ package lbconsulting.com.passwords.classes;
 import com.dropbox.sync.android.DbxFileInfo;
 import com.dropbox.sync.android.DbxPath;
 
-import java.util.ArrayList;
-import java.util.Collections;
-
 /**
  * Created by Loren on 3/26/2015.
  */

@@ -71,8 +71,6 @@ public class EditGeneralAccountFragment extends Fragment {
         }
         setHasOptionsMenu(true);
         EventBus.getDefault().register(this);
-        getActivity().getActionBar().setDisplayHomeAsUpEnabled(true);
-
     }
 
     @Override
@@ -191,6 +189,9 @@ public class EditGeneralAccountFragment extends Fragment {
 
     private void validateItemName() {
         String itemName = txtItemName.getText().toString().trim();
+        if(mPasswordItem==null){
+            mPasswordItem = MainActivity.getActivePasswordItem();
+        }
         if (!itemName.equalsIgnoreCase(mOriginalItemName)) {
             if (itemName.isEmpty()) {
                 MainActivity.showOkDialog(getActivity(),
@@ -198,14 +199,16 @@ public class EditGeneralAccountFragment extends Fragment {
                 txtItemName.setText(mOriginalItemName);
             } else {
                 // check if the name exists
-                if (MainActivity.itemNameExist(itemName, mPasswordItem.getUser_ID())) {
-                    MainActivity.showOkDialog(getActivity(),
-                            "Invalid Item Name", "\"" + itemName + "\" already exists!\n\nReverting back to the unedited name.");
-                    txtItemName.setText(mOriginalItemName);
-                } else {
-                    // the item name does not exist
-                    mIsDirty = true;
-                    //MainActivity.sortPasswordsData();
+                if (mPasswordItem != null) {
+                    if (MainActivity.itemNameExist(itemName, mPasswordItem.getUser_ID())) {
+                        MainActivity.showOkDialog(getActivity(),
+                                "Invalid Item Name", "\"" + itemName + "\" already exists!\n\nReverting back to the unedited name.");
+                        txtItemName.setText(mOriginalItemName);
+                    } else {
+                        // the item name does not exist
+                        mIsDirty = true;
+                        //MainActivity.sortPasswordsData();
+                    }
                 }
             }
         }
@@ -222,6 +225,7 @@ public class EditGeneralAccountFragment extends Fragment {
             mAccountNumber = savedInstanceState.getString(ARG_ACCOUNT_NUMBER);
             mPasswordItem = MainActivity.getActivePasswordItem();
         }
+        getActivity().getActionBar().setDisplayHomeAsUpEnabled(true);
     }
 
 
@@ -249,7 +253,9 @@ public class EditGeneralAccountFragment extends Fragment {
     }
 
     private void updateUI() {
-        mPasswordItem = MainActivity.getActivePasswordItem();
+        if(mPasswordItem==null){
+            mPasswordItem = MainActivity.getActivePasswordItem();
+        }
         if (mPasswordItem != null) {
             txtItemName.setText(mPasswordItem.getName());
             if (mOriginalItemName.isEmpty()) {
@@ -262,23 +268,27 @@ public class EditGeneralAccountFragment extends Fragment {
             String formattedAlternatePhoneNumber = clsFormattingMethods.formatPhoneNumber(mPasswordItem.getAlternatePhoneNumber());
             txtPrimaryPhoneNumber.setText(formattedPrimaryPhoneNumber);
             txtAlternatePhoneNumber.setText(formattedAlternatePhoneNumber);
-            mIsDirty=false;
+            mIsDirty = false;
         }
     }
 
     private void updatePasswordItem() {
+        if(mPasswordItem==null){
+            mPasswordItem = MainActivity.getActivePasswordItem();
+        }
 
-        mPasswordItem.setName(txtItemName.getText().toString().trim());
-        mPasswordItem.setGeneralAccountNumber(txtAccountNumber.getText().toString().trim());
+        if(mPasswordItem!=null) {
+            mPasswordItem.setName(txtItemName.getText().toString().trim());
+            mPasswordItem.setGeneralAccountNumber(txtAccountNumber.getText().toString().trim());
 
-        String unformattedPrimaryPhoneNumber = clsFormattingMethods
-                .unFormatPhoneNumber(txtPrimaryPhoneNumber.getText().toString());
-        String unformattedAlternatePhoneNumber = clsFormattingMethods
-                .unFormatPhoneNumber(txtAlternatePhoneNumber.getText().toString());
-        mPasswordItem.setPrimaryPhoneNumber(unformattedPrimaryPhoneNumber);
-        mPasswordItem.setAlternatePhoneNumber(unformattedAlternatePhoneNumber);
-        mIsDirty = false;
-
+            String unformattedPrimaryPhoneNumber = clsFormattingMethods
+                    .unFormatPhoneNumber(txtPrimaryPhoneNumber.getText().toString());
+            String unformattedAlternatePhoneNumber = clsFormattingMethods
+                    .unFormatPhoneNumber(txtAlternatePhoneNumber.getText().toString());
+            mPasswordItem.setPrimaryPhoneNumber(unformattedPrimaryPhoneNumber);
+            mPasswordItem.setAlternatePhoneNumber(unformattedAlternatePhoneNumber);
+            mIsDirty = false;
+        }
     }
 
     @Override
@@ -342,6 +352,7 @@ public class EditGeneralAccountFragment extends Fragment {
             EventBus.getDefault().post(new clsEvents.isDirty());
             updatePasswordItem();
         }
+        getActivity().getActionBar().setDisplayHomeAsUpEnabled(false);
     }
 
 
@@ -350,7 +361,7 @@ public class EditGeneralAccountFragment extends Fragment {
         super.onDestroy();
         MyLog.i("EditGeneralAccountFragment", "onDestroy()");
         EventBus.getDefault().unregister(this);
-        getActivity().getActionBar().setDisplayHomeAsUpEnabled(false);
+
 
     }
 

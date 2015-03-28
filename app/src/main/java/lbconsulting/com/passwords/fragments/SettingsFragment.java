@@ -4,7 +4,6 @@ package lbconsulting.com.passwords.fragments;
 import android.app.AlertDialog;
 import android.app.Dialog;
 import android.content.DialogInterface;
-import android.graphics.Typeface;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
@@ -17,7 +16,6 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.EditText;
-import android.widget.TextView;
 
 import java.util.ArrayList;
 
@@ -72,7 +70,6 @@ public class SettingsFragment extends Fragment implements View.OnClickListener {
         }
 
         setHasOptionsMenu(true);
-        getActivity().getActionBar().setDisplayHomeAsUpEnabled(true);
 
     }
 
@@ -111,6 +108,7 @@ public class SettingsFragment extends Fragment implements View.OnClickListener {
     public void onActivityCreated(@Nullable Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
         MyLog.i("SettingsFragment", "onActivityCreated()");
+        getActivity().getActionBar().setDisplayHomeAsUpEnabled(true);
     }
 
 
@@ -141,6 +139,9 @@ public class SettingsFragment extends Fragment implements View.OnClickListener {
             }
             String longevityDescription = getLongevityDescription(MySettings.getPasswordLongevity());
             btnSelectPasswordLongevity.setText("Select Password Longevity\n\nCurrent Longevity: " + longevityDescription);
+
+            String btnSelectDropboxFolderText = "Select Dropbox Folder\n\nCurrent Folder:\n" + MySettings.getDropboxFolderName();
+            btnSelectDropboxFolder.setText(btnSelectDropboxFolderText);
         }
     }
 
@@ -197,6 +198,7 @@ public class SettingsFragment extends Fragment implements View.OnClickListener {
     public void onPause() {
         super.onPause();
         MyLog.i("SettingsFragment", "onPause()");
+        getActivity().getActionBar().setDisplayHomeAsUpEnabled(false);
     }
 
 
@@ -204,7 +206,6 @@ public class SettingsFragment extends Fragment implements View.OnClickListener {
     public void onDestroy() {
         super.onDestroy();
         MyLog.i("SettingsFragment", "onDestroy()");
-        getActivity().getActionBar().setDisplayHomeAsUpEnabled(false);
     }
 
 
@@ -264,20 +265,21 @@ public class SettingsFragment extends Fragment implements View.OnClickListener {
                 newUserDialog.setPositiveButton("OK", new DialogInterface.OnClickListener() {
                     public void onClick(DialogInterface dialog, int whichButton) {
                         String newUserName = input.getText().toString().trim();
-                        if (IsUnique(newUserName)) {
+                        if (isUnique(newUserName)) {
                             int newUserID = MainActivity.getNextUserID();
                             mActiveUser = new clsUsers();
                             mActiveUser.setUserID(newUserID);
                             mActiveUser.setUserName(newUserName);
                             MySettings.setActiveUserID(newUserID);
                             MySettings.setActiveUserName(newUserName);
+                            MainActivity.addNewUser(mActiveUser);
                             selectActiveUser();
                             dialog.dismiss();
                         } else {
                             dialog.dismiss();
                             MyLog.e("SettingsFragment", "onClick OK: new user is not unique");
                             MainActivity.showOkDialog(getActivity(), "Failed to create new user",
-                                    "The provide use name \"" + newUserName + "\" already exists!");
+                                    "The provide user name \"" + newUserName + "\" already exists!");
                         }
                     }
                 });
@@ -310,10 +312,10 @@ public class SettingsFragment extends Fragment implements View.OnClickListener {
                 editUserDialog.setPositiveButton("OK", new DialogInterface.OnClickListener() {
                     public void onClick(DialogInterface dialog, int whichButton) {
                         String newUserName = userNameInput.getText().toString().trim();
-                        if (IsUnique(newUserName)) {
+                        if (isUnique(newUserName)) {
                             mActiveUser.setUserName(newUserName);
-                            selectActiveUser();
                             MySettings.setActiveUserName(newUserName);
+                            selectActiveUser();
                             dialog.dismiss();
                         } else {
                             dialog.dismiss();
@@ -407,7 +409,7 @@ public class SettingsFragment extends Fragment implements View.OnClickListener {
 
     }
 
-    private boolean IsUnique(String newUserName) {
+    private boolean isUnique(String newUserName) {
         boolean result = true;
         for (clsUsers user : mUsers) {
             if (user.getUserName().equalsIgnoreCase(newUserName)) {
@@ -424,6 +426,7 @@ public class SettingsFragment extends Fragment implements View.OnClickListener {
         String actionBarTitle = mActiveUser.getUserName() + "'s Passwords";
         MainActivity.setActionBarTitle(actionBarTitle);
         updateUI();
+        EventBus.getDefault().post(new clsEvents.isDirty());
         EventBus.getDefault().post(new clsEvents.replaceFragment(-1, MySettings.FRAG_ITEMS_LIST, false));
     }
 }

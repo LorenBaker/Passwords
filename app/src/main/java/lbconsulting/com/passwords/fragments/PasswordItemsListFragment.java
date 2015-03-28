@@ -1,5 +1,8 @@
 package lbconsulting.com.passwords.fragments;
 
+import android.app.AlertDialog;
+import android.app.Dialog;
+import android.content.DialogInterface;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
@@ -28,6 +31,7 @@ import lbconsulting.com.passwords.classes.MySettings;
 import lbconsulting.com.passwords.classes.clsEvents;
 import lbconsulting.com.passwords.classes.clsItemTypes;
 import lbconsulting.com.passwords.classes.clsPasswordItem;
+import lbconsulting.com.passwords.classes.clsUsers;
 
 /**
  * Created by Loren on 3/5/2015.
@@ -122,7 +126,7 @@ public class PasswordItemsListFragment extends Fragment
                     } else {
                         ArrayList<clsPasswordItem> filteredUserItems = new ArrayList<clsPasswordItem>();
                         for (clsPasswordItem item : mAllUserItems) {
-                            if (item.getName().contains(s)) {
+                            if (item.getName().toLowerCase().contains(s.toString().toLowerCase())) {
                                 filteredUserItems.add(item);
                             }
                         }
@@ -255,7 +259,7 @@ public class PasswordItemsListFragment extends Fragment
 
             // Do Fragment menu item stuff here
             case R.id.action_new:
-                clsPasswordItem newPasswordItem = MainActivity.createNewPasswordItem();
+                final clsPasswordItem newPasswordItem = MainActivity.createNewPasswordItem();
 
                 if (lvCreditCards.getVisibility() == View.VISIBLE) {
                     newPasswordItem.setItemType_ID(clsItemTypes.CREDIT_CARDS);
@@ -278,6 +282,45 @@ public class PasswordItemsListFragment extends Fragment
                             MySettings.FRAG_EDIT_WEBSITE, true));
 
                 } else if (lvAllUserItems.getVisibility() == View.VISIBLE) {
+                    // Strings to Show In Dialog with Radio Buttons
+                    int selectedItemType = -1;
+
+                    // Creating and Building the Dialog
+                    Dialog itemTypesDialog;
+                    final AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
+                    builder.setTitle("Select Item Type");
+                    builder.setSingleChoiceItems(clsItemTypes.ITEM_TYPES, selectedItemType, new DialogInterface.OnClickListener() {
+                        public void onClick(DialogInterface dialog, int item) {
+                            int itemType = item+1;
+                            switch (itemType){
+                                case clsItemTypes.CREDIT_CARDS:
+                                    newPasswordItem.setItemType_ID(clsItemTypes.CREDIT_CARDS);
+                                    EventBus.getDefault().post(new clsEvents.replaceFragment(newPasswordItem.getID(),
+                                            MySettings.FRAG_EDIT_CREDIT_CARD, true));
+                                    break;
+                                case clsItemTypes.GENERAL_ACCOUNTS:
+                                    newPasswordItem.setItemType_ID(clsItemTypes.GENERAL_ACCOUNTS);
+                                    EventBus.getDefault().post(new clsEvents.replaceFragment(newPasswordItem.getID(),
+                                            MySettings.FRAG_EDIT_GENERAL_ACCOUNT, true));
+                                    break;
+                                case clsItemTypes.SOFTWARE:
+                                    newPasswordItem.setItemType_ID(clsItemTypes.SOFTWARE);
+                                    EventBus.getDefault().post(new clsEvents.replaceFragment(newPasswordItem.getID(),
+                                            MySettings.FRAG_EDIT_SOFTWARE, true));
+                                    break;
+                                case clsItemTypes.WEBSITES:
+                                    newPasswordItem.setItemType_ID(clsItemTypes.WEBSITES);
+                                    EventBus.getDefault().post(new clsEvents.replaceFragment(newPasswordItem.getID(),
+                                            MySettings.FRAG_EDIT_WEBSITE, true));
+                                    break;
+                            }
+                            dialog.dismiss();
+                        }
+                    });
+                    itemTypesDialog = builder.create();
+                    itemTypesDialog.show();
+
+
                     // TODO: 3/14/2015 Make a dialog asking the user what password type item to create
                 }
 

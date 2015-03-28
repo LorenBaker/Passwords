@@ -17,7 +17,6 @@ import android.widget.ImageButton;
 import android.widget.TextView;
 import android.widget.Toast;
 
-
 import de.greenrobot.event.EventBus;
 import lbconsulting.com.passwords.R;
 import lbconsulting.com.passwords.activities.MainActivity;
@@ -208,6 +207,7 @@ public class PasswordItemDetailFragment extends Fragment implements View.OnClick
         if (mIsDirty && mPasswordItem != null && txtComments != null) {
             mPasswordItem.setComments(txtComments.getText().toString().trim());
         }
+        getActivity().getActionBar().setDisplayHomeAsUpEnabled(false);
     }
 
     @Override
@@ -215,7 +215,6 @@ public class PasswordItemDetailFragment extends Fragment implements View.OnClick
         super.onDestroy();
         MyLog.i("PasswordItemDetailFragment", "onDestroy()");
         EventBus.getDefault().unregister(this);
-        getActivity().getActionBar().setDisplayHomeAsUpEnabled(false);
     }
 
     @Override

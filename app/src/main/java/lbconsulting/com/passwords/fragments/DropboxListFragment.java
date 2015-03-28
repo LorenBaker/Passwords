@@ -1,16 +1,22 @@
 package lbconsulting.com.passwords.fragments;
 
+import android.app.AlertDialog;
+import android.content.DialogInterface;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
+import android.text.InputType;
 import android.view.LayoutInflater;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.ListView;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import com.dropbox.sync.android.DbxException;
 import com.dropbox.sync.android.DbxFileInfo;
@@ -21,12 +27,14 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import de.greenrobot.event.EventBus;
 import lbconsulting.com.passwords.R;
 import lbconsulting.com.passwords.activities.MainActivity;
 import lbconsulting.com.passwords.adapters.DropboxFoldersListViewAdapter;
-import lbconsulting.com.passwords.adapters.PasswordItemsListViewAdapter;
 import lbconsulting.com.passwords.classes.MyLog;
+import lbconsulting.com.passwords.classes.MySettings;
 import lbconsulting.com.passwords.classes.clsDbxFolder;
+import lbconsulting.com.passwords.classes.clsEvents;
 
 /**
  * Created by Loren on 3/5/2015.
@@ -50,6 +58,7 @@ public class DropboxListFragment extends Fragment
     private DropboxFoldersListViewAdapter mDropboxFoldersAdapter;
 
     private String mFolderPath = "";
+    private DbxPath mActivePath;
 
     //</editor-fold>
 
@@ -67,14 +76,15 @@ public class DropboxListFragment extends Fragment
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         MyLog.i("DropboxListFragment", "onCreate()");
-/*        EventBus.getDefault().register(this);
-        setHasOptionsMenu(true);*/
+        setHasOptionsMenu(true);
+
     }
 
     @Override
     public void onActivityCreated(@Nullable Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
         MyLog.i("DropboxListFragment", "onActivityCreated()");
+        getActivity().getActionBar().setDisplayHomeAsUpEnabled(true);
         dbxFs = MainActivity.getDbxFs();
     }
 
@@ -103,6 +113,7 @@ public class DropboxListFragment extends Fragment
 
     private void updateUI(DbxPath path) {
         if (dbxFs != null) {
+            mActivePath = path;
             try {
                 List<DbxFileInfo> listFolders = dbxFs.listFolder(path);
                 // TODO: 3/26/2015 sort listFolders
@@ -188,13 +199,13 @@ public class DropboxListFragment extends Fragment
     public void onPause() {
         super.onPause();
         MyLog.i("DropboxListFragment", "onPause()");
+        getActivity().getActionBar().setDisplayHomeAsUpEnabled(false);
     }
 
     @Override
     public void onDestroy() {
         super.onDestroy();
         MyLog.i("DropboxListFragment", "onDestroy()");
-/*        EventBus.getDefault().unregister(this);*/
     }
 
     @Override
@@ -202,12 +213,13 @@ public class DropboxListFragment extends Fragment
 
         switch (v.getId()) {
             case R.id.btnCancel:
-                Toast.makeText(getActivity(), "btnCancel Clicked", Toast.LENGTH_SHORT).show();
+                //Toast.makeText(getActivity(), "btnCancel Clicked", Toast.LENGTH_SHORT).show();
+                EventBus.getDefault().post(new clsEvents.PopBackStack());
                 break;
 
             case R.id.btnSelect:
-                Toast.makeText(getActivity(), "btnSelect Clicked", Toast.LENGTH_SHORT).show();
-
+                //Toast.makeText(getActivity(), "btnSelect Clicked", Toast.LENGTH_SHORT).show();
+                selectFolder(mActivePath);
                 break;
 
         }
@@ -227,5 +239,92 @@ public class DropboxListFragment extends Fragment
                 }
             }
         }
+    }
+
+    @Override
+    public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
+        inflater.inflate(R.menu.menu_frag_dropbox_list, menu);
+        super.onCreateOptionsMenu(menu, inflater);
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        switch (item.getItemId()) {
+
+            // Do Fragment menu item stuff here
+            case R.id.action_new:
+                // Toast.makeText(getActivity(), "action_new Clicked", Toast.LENGTH_SHORT).show();
+
+                AlertDialog.Builder newUserDialog = new AlertDialog.Builder(getActivity());
+
+                newUserDialog.setTitle("Enter Dropbox Folder Name");
+                newUserDialog.setMessage("");
+
+                // Set an EditText view to get user input
+                final EditText input = new EditText(getActivity());
+                input.setHint("New Dropbox Folder Name");
+                input.setInputType(InputType.TYPE_TEXT_FLAG_CAP_WORDS);
+                newUserDialog.setView(input);
+
+                newUserDialog.setPositiveButton("Create Folder", new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int whichButton) {
+                        String newFolderName = input.getText().toString().trim();
+                        if (isUnique(newFolderName)) {
+                            if (dbxFs != null) {
+                                try {
+                                    DbxPath newFolderPath = new DbxPath(mActivePath, newFolderName);
+                                    dbxFs.createFolder(newFolderPath);
+                                    selectFolder(newFolderPath);
+                                } catch (DbxException e) {
+                                    MyLog.e("DropboxListFragment", "onClick: DbxException");
+                                    e.printStackTrace();
+                                }
+                            }
+                            dialog.dismiss();
+                        } else {
+                            dialog.dismiss();
+                            MyLog.e("DropboxListFragment", "onClick Create Folder: new folder name is not unique");
+                            MainActivity.showOkDialog(getActivity(), "Failed to create new Dropbox folder.",
+                                    "The provide folder name \"" + newFolderName + "\" already exists!");
+                        }
+
+                    }
+                });
+
+                newUserDialog.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int whichButton) {
+                        // Canceled.
+                        dialog.dismiss();
+                    }
+                });
+
+                newUserDialog.show();
+                return true;
+
+            case android.R.id.home:
+                EventBus.getDefault().post(new clsEvents.PopBackStack());
+                return true;
+
+            default:
+                // Not implemented here
+                return false;
+        }
+    }
+
+    private void selectFolder(DbxPath newFolderPath) {
+        String newFolderPathString = getFullFolderPath(newFolderPath);
+        MySettings.setDropboxFolderName(newFolderPathString);
+        EventBus.getDefault().post(new clsEvents.PopBackStack());
+    }
+
+    private boolean isUnique(String newFolderName) {
+        boolean result = true;
+        for (clsDbxFolder folder : mDropboxFolders) {
+            if (folder.getFolderName().equalsIgnoreCase(newFolderName)) {
+                result = false;
+                break;
+            }
+        }
+        return result;
     }
 }

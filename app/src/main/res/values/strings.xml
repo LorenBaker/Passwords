@@ -1,7 +1,5 @@
 <resources>
     <string name="app_name">Passwords</string>
-    <string name="title_passworditem_detail">PasswordItem Detail</string>
+    <string name="title_password_item_detail">Password Item Detail</string>
 
-<!-- TODO: Remove or change this placeholder text -->
-    <string name="hello_blank_fragment">Hello blank fragment</string>
 </resources>

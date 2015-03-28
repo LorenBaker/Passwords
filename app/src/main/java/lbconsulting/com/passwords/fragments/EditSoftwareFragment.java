@@ -76,8 +76,6 @@ public class EditSoftwareFragment extends Fragment {
         }
         setHasOptionsMenu(true);
         EventBus.getDefault().register(this);
-        getActivity().getActionBar().setDisplayHomeAsUpEnabled(true);
-
     }
 
     @Override
@@ -208,6 +206,7 @@ public class EditSoftwareFragment extends Fragment {
             mAccountNumber = savedInstanceState.getString(ARG_ACCOUNT_NUMBER);
             mPasswordItem = MainActivity.getActivePasswordItem();
         }
+        getActivity().getActionBar().setDisplayHomeAsUpEnabled(true);
     }
 
 
@@ -324,6 +323,7 @@ public class EditSoftwareFragment extends Fragment {
             EventBus.getDefault().post(new clsEvents.isDirty());
             updatePasswordItem();
         }
+        getActivity().getActionBar().setDisplayHomeAsUpEnabled(false);
     }
 
 
@@ -332,8 +332,6 @@ public class EditSoftwareFragment extends Fragment {
         super.onDestroy();
         MyLog.i("EditSoftwareFragment", "onDestroy()");
         EventBus.getDefault().unregister(this);
-        getActivity().getActionBar().setDisplayHomeAsUpEnabled(false);
-
     }
 
 

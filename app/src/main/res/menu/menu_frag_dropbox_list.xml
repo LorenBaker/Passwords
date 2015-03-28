@@ -1,0 +1,18 @@
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools" tools:context=".MainActivity">
+
+<!--    Don't know why android:showAsAction="always" produce an error ...
+    The app compiles and seems to run fine.
+    app:showAsAction="always" does not produce an error ...
+    but the icon does not show in the ActionBar, even though the preview shows it!-->
+
+
+    <item android:id="@+id/action_new"
+        android:title="New"
+        android:icon="@drawable/ic_action_new_light"
+        android:orderInCategory="910"
+        android:showAsAction="always"/>
+
+
+</menu>

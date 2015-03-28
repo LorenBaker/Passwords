@@ -268,8 +268,11 @@ public class clsFormattingMethods {
         if (accountNumber.isEmpty()) {
             formattedNumber = "";
         } else {
-            formattedNumber = accountNumber.substring(0, subGroupLength);
-            int end;
+            int end=subGroupLength;
+            if (end > accountNumber.length()) {
+                end = accountNumber.length();
+            }
+            formattedNumber = accountNumber.substring(0, end);
             for (int i = subGroupLength; i < accountNumber.length(); i = i + subGroupLength) {
                 end = i + subGroupLength;
                 if (end > accountNumber.length()) {

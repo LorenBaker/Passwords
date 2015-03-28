@@ -11,6 +11,9 @@ public class clsItemTypes {
     public static final int WEBSITES = 4;
     public static final int ALL_ITEMS = 5;
 
+    public static final CharSequence[] ITEM_TYPES = {"Credit Cards", "General Accounts", "Software", "Websites"};
+
+
     public int getItemTypeID() {
         return ItemTypeID;
     }

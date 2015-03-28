@@ -11,7 +11,6 @@ import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ProgressBar;
-import android.widget.Toast;
 
 import de.greenrobot.event.EventBus;
 import lbconsulting.com.passwords.R;
@@ -160,7 +159,7 @@ public class PasswordFragment extends Fragment implements View.OnClickListener {
                 // TODO: 3/24/2015 start longevity service
                 showProgressBar();
 
-                MainActivity.readLabPasswordDataAsync();
+                MainActivity.openAndReadLabPasswordDataAsync();
                 //EventBus.getDefault().post(new clsEvents.replaceFragment(-1,MySettings.FRAG_ITEMS_LIST,false));
                 // Toast.makeText(getActivity(), "TO COME: btnOK", Toast.LENGTH_SHORT).show();
                 break;
