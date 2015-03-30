@@ -24,6 +24,24 @@ public class clsEvents {
         }
     }
 
+    public static class showOkDialog{
+
+        String mTitle;
+        String mMessage;
+        public showOkDialog(String title, String message){
+            mTitle=title;
+            mMessage=message;
+        }
+
+        public String getTitle() {
+            return mTitle;
+        }
+
+        public String getMessage() {
+            return mMessage;
+        }
+    }
+
     public static class replaceFragment {
         int mItemID;
         int mFragmentID;

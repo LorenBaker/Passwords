@@ -32,7 +32,7 @@ public class MySettings {
     private static final String DROPBOX_FILENAME = "/JsonTest.txt";
     //private static final String DROPBOX_FILENAME = DEFAULT_DROPBOX_PATH + "/JsonTest.txt";
 
-
+    public static final int DEFAULT_LONGEVITY_MIN = 15;
 
     public static final String ARG_ACTIVE_FRAGMENT = "arg_active_fragment";
     public static final int FRAG_ITEMS_LIST = 10;
@@ -92,7 +92,7 @@ public class MySettings {
         return result;
     }
 
-    public static void setActiveUserName(String newName){
+    public static void setActiveUserName(String newName) {
         clsUsers result = null;
         int activeUserID = getActiveUserID();
         if (activeUserID > 0) {
@@ -102,7 +102,7 @@ public class MySettings {
                 }
             }
         }
-        if(result!=null){
+        if (result != null) {
             result.setUserName(newName);
             EventBus.getDefault().post(new clsEvents.isDirty());
         }

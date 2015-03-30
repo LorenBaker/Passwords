@@ -25,6 +25,7 @@ import lbconsulting.com.passwords.classes.MySettings;
 import lbconsulting.com.passwords.classes.clsEvents;
 import lbconsulting.com.passwords.classes.clsItemTypes;
 import lbconsulting.com.passwords.classes.clsPasswordItem;
+import lbconsulting.com.passwords.services.PasswordsIntentService;
 
 /**
  * A fragment that shows a single PasswordItem detail screen.
@@ -278,7 +279,8 @@ public class PasswordItemDetailFragment extends Fragment implements View.OnClick
     public void onClick(View v) {
         switch (v.getId()) {
             case R.id.btnCallAlternate:
-                Toast.makeText(getActivity(), "TO COME: btnCallAlternate", Toast.LENGTH_SHORT).show();
+                PasswordsIntentService.startActionPasswordLongevity(getActivity(), 1);
+                //Toast.makeText(getActivity(), "TO COME: btnCallAlternate", Toast.LENGTH_SHORT).show();
                 break;
 
             case R.id.btnCallPrimary:

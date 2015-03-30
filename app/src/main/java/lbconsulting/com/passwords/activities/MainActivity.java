@@ -32,6 +32,7 @@ import java.io.UnsupportedEncodingException;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
+import java.text.NumberFormat;
 import java.util.Collections;
 import java.util.Comparator;
 
@@ -77,7 +78,7 @@ public class MainActivity extends FragmentActivity {
 
     private static int mLastPasswordItemID;
 
-    private static DbxFile.Listener mPasswordsDataFileListener;
+    private static DbxFile.Listener mJsonDataFileListener;
     private static DbxFile mJsonDataFile = null;
 
     public static int getLastPasswordItemID() {
@@ -404,6 +405,10 @@ public class MainActivity extends FragmentActivity {
         showFragments();
     }
 
+    public void onEvent(clsEvents.showOkDialog event) {
+        showOkDialog(this, event.getTitle(), event.getMessage());
+    }
+
     public void onEvent(clsEvents.isDirty event) {
         mIsDirty = true;
     }
@@ -437,7 +442,7 @@ public class MainActivity extends FragmentActivity {
 
         //noinspection SimplifiableIfStatement
         if (id == R.id.action_save_to_dropbox) {
-            saveEncryptedData();
+            saveEncryptedData(true);
             return true;
 
         } else if (id == R.id.action_settings) {
@@ -469,15 +474,19 @@ public class MainActivity extends FragmentActivity {
     @Override
     protected void onPause() {
         MyLog.i("MainActivity", "onPause()");
+
+        if (mIsDirty) {
+            saveEncryptedData(false);
+        }
+
         if (mJsonDataFile != null) {
-//            mJsonDataFile.removeListener(mPasswordsDataFileListener);
+            // stop listening for json data file changes
+            mJsonDataFile.removeListener(mJsonDataFileListener);
+            // close the json data file
             mJsonDataFile.close();
         }
 
-        if (mIsDirty) {
-            saveEncryptedData();
-        }
-
+//        dbxFs.shutDown();
 
         super.onPause();
     }
@@ -501,13 +510,26 @@ public class MainActivity extends FragmentActivity {
             //mActivePasswordItemID = MySettings.getActivePasswordItemID();
             try {
                 dbxFs = DbxFileSystem.forAccount(mDbxAcctMgr.getLinkedAccount());
-/*                mPasswordsDataFileListener = new DbxFile.Listener() {
+                mJsonDataFileListener = new DbxFile.Listener() {
                     @Override
                     public void onFileChange(DbxFile dbxFile) {
                         MyLog.d("MainActivity", "onFileChange");
-                        openAndReadLabPasswordDataAsync();
+                        try {
+                            DbxFileStatus status = mJsonDataFile.getNewerStatus();
+                            MyLog.i("MainActivity", "onFileChange: Newer status: " + status);
+
+                            if (status != null && status.isCached) {
+                                MyLog.i("MainActivity", "onFileChange: Newer status.isCached");
+                                mJsonDataFile.update();
+                                MyLog.i("MainActivity", "onFileChange: mJsonDataFile.update()");
+                                new readLabPasswordData().execute();
+                            }
+                        } catch (DbxException e) {
+                            MyLog.e("MainActivity", "onFileChange: DbxException");
+                            e.printStackTrace();
+                        }
                     }
-                };*/
+                };
                 String appPassword = MySettings.getAppPassword();
                 if (appPassword.equals(MySettings.NOT_AVAILABLE)) {
                     MySettings.setActiveFragmentID(MySettings.FRAG_APP_PASSWORD);
@@ -539,54 +561,47 @@ public class MainActivity extends FragmentActivity {
         new openAndReadLabPasswordData().execute();
     }
 
-    private static void openJsonFile() {
+    private static void openJsonDataFile() {
         if (dbxFs == null) {
-            MyLog.e("MainActivity", "openJsonFile FAILED; dbxFs == null");
+            MyLog.e("MainActivity", "openJsonDataFile FAILED; dbxFs == null");
             return;
         }
 
         try {
             dbxFs.awaitFirstSync();
-            dbxFs.syncNowAndWait();
+            //dbxFs.syncNowAndWait();
 
+            // check that there is a valid dropbox folder
             DbxPath folderPath = new DbxPath(MySettings.getDropboxFolderName());
             if (!dbxFs.isFolder(folderPath)) {
-                MyLog.e("MainActivity", "openJsonFile FAILED; path: "
+                MyLog.e("MainActivity", "openJsonDataFile FAILED; path: "
                         + MySettings.getDropboxFolderName() + " does not exist!");
+                String title = "Open Data File";
+                String message = "Unable to open data file; the data file does not exist!";
+                EventBus.getDefault().post(new clsEvents.showOkDialog(title, message));
                 return;
             }
 
+            // check
             DbxPath filePath = new DbxPath(MySettings.getDropboxFilename());
             mJsonDataFile = null;
             if (dbxFs.isFile(filePath)) {
                 mJsonDataFile = dbxFs.open(filePath);
                 if (mJsonDataFile == null) {
-                    MyLog.e("MainActivity", "openJsonFile FAILED. mJsonDataFile == null");
+                    MyLog.e("MainActivity", "openJsonDataFile FAILED. mJsonDataFile == null");
+                    // TODO: Unable to open JSON data file. Show ok dialog.
                     return;
                 }
-                mJsonDataFile.addListener(new DbxFile.Listener() {
-                    @Override
-                    public void onFileChange(DbxFile file) {
-                        MyLog.d("MainActivity", "onFileChange");
-                        try {
-                            DbxFileStatus status = mJsonDataFile.getNewerStatus();
-                            MyLog.i("MainActivity", "onFileChange: Newer status: " + status);
-
-                            if (status != null && status.isCached) {
-                                MyLog.i("MainActivity", "onFileChange: Newer status.isCached");
-                                mJsonDataFile.update();
-                                MyLog.i("MainActivity", "onFileChange: mJsonDataFile.update()");
-                                new readLabPasswordData().execute();
-                            }
-                        } catch (DbxException e) {
-                            MyLog.e("MainActivity", "onFileChange: DbxException");
-                            e.printStackTrace();
-                        }
-                    }
-                });
+            } else {
+                MyLog.i("MainActivity", "openJsonDataFile: JSON file does not exist... creating file.");
+                mJsonDataFile = dbxFs.create(filePath);
             }
+            // start listening for changes
+            mJsonDataFile.addListener(mJsonDataFileListener);
+
+
         } catch (DbxException e) {
-            MyLog.e("MainActivity", "openJsonFile: DbxException");
+            MyLog.e("MainActivity", "openJsonDataFile: DbxException");
             e.printStackTrace();
         }
     }
@@ -677,7 +692,7 @@ public class MainActivity extends FragmentActivity {
         }
     }
 
-    private void saveEncryptedData() {
+    private void saveEncryptedData(boolean showDialog) {
         // Create JSON file string
         Gson gson = new Gson();
         String jsonFileString = gson.toJson(mPasswordsData, clsLabPasswords.class);
@@ -725,17 +740,25 @@ public class MainActivity extends FragmentActivity {
                 String filePathString = MySettings.getDropboxFilename();
                 DbxPath filePath = new DbxPath(filePathString);
 
-                if (dbxFs.exists(filePath)) {
-                    dbxFs.delete(filePath);
+                if (mJsonDataFile != null) {
+                    // you're going to change the json data file ...
+                    // so temporarily stop listening for changes.
+                    mJsonDataFile.removeListener(mJsonDataFileListener);
+
+                    // write the file
+                    mJsonDataFile.writeString(encryptedJsonFileString);
+                    mIsDirty = false;
+                    DbxFileInfo fileInfo = dbxFs.getFileInfo(filePath);
+                    long fileSize = fileInfo.size;
+                    if (showDialog) {
+                        showOkDialog(this, "Success.", "Encrypted file saved.\nFile size = "
+                                + NumberFormat.getInstance().format(fileSize) + " bytes.");
+                    }
+                    MyLog.i("MainActivity", "saveEncryptedData: encrypted file SAVED. File size = " + fileSize);
+
+                    // resume listening for changes
+                    mJsonDataFile.addListener(mJsonDataFileListener);
                 }
-
-                DbxFile jsonDataFile = dbxFs.create(filePath);
-                jsonDataFile.writeString(encryptedJsonFileString);
-                mIsDirty = false;
-
-                DbxFileInfo fileInfo = dbxFs.getFileInfo(filePath);
-                long fileSize = fileInfo.size;
-                MyLog.i("MainActivity", "saveEncryptedData: encrypted file SAVED. File size = " + fileSize);
             }
         } catch (DbxException e) {
             MyLog.e("MainActivity", "saveEncryptedData: DbxException");
@@ -841,7 +864,7 @@ public class MainActivity extends FragmentActivity {
         @Override
         protected Void doInBackground(Void... params) {
             MyLog.i("openAndReadLabPasswordData", "doInBackground");
-            openJsonFile();
+            openJsonDataFile();
             readData();
             return null;
         }
