@@ -49,10 +49,7 @@
             android:enabled="true"
             android:exported="false"
             android:label="Dropbox Sync" />
-        <service
-            android:name=".services.PasswordsIntentService"
-            android:exported="false" >
-        </service>
+
     </application>
 
 </manifest>

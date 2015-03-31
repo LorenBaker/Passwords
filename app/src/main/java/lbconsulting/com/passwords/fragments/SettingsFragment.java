@@ -39,8 +39,8 @@ public class SettingsFragment extends Fragment implements View.OnClickListener {
     private static final String ARG_IS_FIRST_TIME = "isFirstTime";
     private boolean mIsFirstTime = false;
 
-/*    private TextView tvFirstTimeMessage;
-    private View line;*/
+    /*    private TextView tvFirstTimeMessage;
+        private View line;*/
     private Button btnSelectUser;
     private Button btnCreateNewUser;
     private Button btnEditUserName;
@@ -137,7 +137,8 @@ public class SettingsFragment extends Fragment implements View.OnClickListener {
                     btnSelectUser.setText("Select User\n\nCurrent user: NONE");
                 }
             }
-            String longevityDescription = getLongevityDescription(MySettings.getPasswordLongevity());
+            int passwordLongevity = (int) MySettings.getPasswordLongevity() / 60000;
+            String longevityDescription = getLongevityDescription(passwordLongevity);
             btnSelectPasswordLongevity.setText("Select Password Longevity\n\nCurrent Longevity: " + longevityDescription);
 
             String btnSelectDropboxFolderText = "Select Dropbox Folder\n\nCurrent Folder:\n" + MySettings.getDropboxFolderName();
@@ -148,6 +149,9 @@ public class SettingsFragment extends Fragment implements View.OnClickListener {
     private String getLongevityDescription(int longevity) {
         String description = "5 min";
         switch (longevity) {
+            case 5:
+                description = "5 min";
+                break;
             case 15:
                 description = "15 min";
                 break;
@@ -164,7 +168,7 @@ public class SettingsFragment extends Fragment implements View.OnClickListener {
                 description = "8 hrs";
                 break;
             default:
-                description = "5 min";
+                description = "None";
                 break;
         }
         return description;
@@ -338,25 +342,29 @@ public class SettingsFragment extends Fragment implements View.OnClickListener {
 
             case R.id.btnSelectPasswordLongevity:
                 // Strings to Show In Dialog with Radio Buttons
-                final CharSequence[] items = {"5 min", "15 min", "30 min", "1 hr", "4 hrs", "8 hrs"};
+                final CharSequence[] items = {"None", "5 min", "15 min", "30 min", "1 hr", "4 hrs", "8 hrs"};
 
-                int longevity = MySettings.getPasswordLongevity();
+                long passwordLongevity = MySettings.getPasswordLongevity();
+                int longevity = (int) passwordLongevity / 60000;
                 int selectedLongevityPosition = 0;
                 switch (longevity) {
-                    case 15:
+                    case 5:
                         selectedLongevityPosition = 1;
                         break;
-                    case 30:
+                    case 15:
                         selectedLongevityPosition = 2;
                         break;
-                    case 60:
+                    case 30:
                         selectedLongevityPosition = 3;
                         break;
-                    case 240:
+                    case 60:
                         selectedLongevityPosition = 4;
                         break;
-                    case 480:
+                    case 240:
                         selectedLongevityPosition = 5;
+                        break;
+                    case 480:
+                        selectedLongevityPosition = 6;
                         break;
                     default:
                         selectedLongevityPosition = 0;
@@ -374,26 +382,32 @@ public class SettingsFragment extends Fragment implements View.OnClickListener {
 
                         switch (position) {
                             case 0:
+                                newLongevity = -1;
+                                break;
+
+                            case 1:
                                 newLongevity = 5;
                                 break;
-                            case 1:
+                            case 2:
                                 newLongevity = 15;
                                 break;
-                            case 2:
+                            case 3:
                                 newLongevity = 30;
                                 break;
-                            case 3:
+                            case 4:
                                 newLongevity = 60;
                                 break;
-                            case 4:
+                            case 5:
                                 newLongevity = 240;
                                 break;
-                            case 5:
+                            case 6:
                                 newLongevity = 480;
                                 break;
                         }
+
                         String newLongevityDescription = getLongevityDescription(newLongevity);
-                        MySettings.setPasswordLongevity(newLongevity);
+                        long longevity = newLongevity * 60000;
+                        MySettings.setPasswordLongevity(longevity);
                         btnSelectPasswordLongevity.setText("Select Password Longevity\n\nCurrent Longevity: " + newLongevityDescription);
                         dialog.dismiss();
                     }

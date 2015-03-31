@@ -50,12 +50,12 @@ import lbconsulting.com.passwords.classes.clsItemTypes;
 import lbconsulting.com.passwords.classes.clsLabPasswords;
 import lbconsulting.com.passwords.classes.clsPasswordItem;
 import lbconsulting.com.passwords.classes.clsUsers;
+import lbconsulting.com.passwords.fragments.AppPasswordFragment;
 import lbconsulting.com.passwords.fragments.DropboxListFragment;
 import lbconsulting.com.passwords.fragments.EditCreditCardFragment;
 import lbconsulting.com.passwords.fragments.EditGeneralAccountFragment;
 import lbconsulting.com.passwords.fragments.EditSoftwareFragment;
 import lbconsulting.com.passwords.fragments.EditWebsiteFragment;
-import lbconsulting.com.passwords.fragments.PasswordFragment;
 import lbconsulting.com.passwords.fragments.PasswordItemDetailFragment;
 import lbconsulting.com.passwords.fragments.PasswordItemsListFragment;
 import lbconsulting.com.passwords.fragments.SettingsFragment;
@@ -185,6 +185,7 @@ public class MainActivity extends FragmentActivity {
         MyLog.i("MainActivity", "onCreate()");
         setContentView(R.layout.activity_main);
         EventBus.getDefault().register(this);
+
         MySettings.setContext(this);
 
         mActionBar = getActionBar();
@@ -350,7 +351,7 @@ public class MainActivity extends FragmentActivity {
                     fm.beginTransaction()
                             .setTransition(FragmentTransaction.TRANSIT_FRAGMENT_FADE)
                             .replace(R.id.fragment_container,
-                                    PasswordFragment.newInstance(mArgBoolean), "FRAG_SETTINGS")
+                                    AppPasswordFragment.newInstance(mArgBoolean), "FRAG_SETTINGS")
                             .addToBackStack("FRAG_SETTINGS")
                             .commit();
                     break;
@@ -584,7 +585,10 @@ public class MainActivity extends FragmentActivity {
 
             // check
             DbxPath filePath = new DbxPath(MySettings.getDropboxFilename());
-            mJsonDataFile = null;
+            if (mJsonDataFile != null) {
+                mJsonDataFile.close();
+                mJsonDataFile = null;
+            }
             if (dbxFs.isFile(filePath)) {
                 mJsonDataFile = dbxFs.open(filePath);
                 if (mJsonDataFile == null) {
@@ -601,7 +605,7 @@ public class MainActivity extends FragmentActivity {
 
 
         } catch (DbxException e) {
-            MyLog.e("MainActivity", "openJsonDataFile: DbxException");
+            MyLog.e("MainActivity", "openJsonDataFile: DbxException; " + e.getMessage());
             e.printStackTrace();
         }
     }
@@ -828,7 +832,7 @@ public class MainActivity extends FragmentActivity {
         @Override
         protected void onPreExecute() {
             super.onPreExecute();
-            MyLog.i("readLabPasswordData", "onPreExecute");
+            MyLog.i("resetPassword", "onPreExecute");
         }
 
         @Override
@@ -841,14 +845,14 @@ public class MainActivity extends FragmentActivity {
         @Override
         protected void onPostExecute(Void aVoid) {
             super.onPostExecute(aVoid);
-            // if PasswordFragment is visible ...
+            // if AppPasswordFragment is visible ...
             // then the following post will open the PasswordItemsListFragment
             EventBus.getDefault().post(new clsEvents.readLabPasswordDataComplete());
             if (mPasswordsData != null) {
-                MyLog.i("readLabPasswordData", "onPostExecute: mPasswordsData not null.");
+                MyLog.i("resetPassword", "onPostExecute: mPasswordsData not null.");
                 updateUI();
             } else {
-                MyLog.i("readLabPasswordData", "onPostExecute: mPasswordsData is NULL.");
+                MyLog.i("resetPassword", "onPostExecute: mPasswordsData is NULL.");
             }
             mIsDirty = false;
         }
@@ -872,7 +876,7 @@ public class MainActivity extends FragmentActivity {
         @Override
         protected void onPostExecute(Void aVoid) {
             super.onPostExecute(aVoid);
-            // if PasswordFragment is visible ...
+            // if AppPasswordFragment is visible ...
             // then the following post will open the PasswordItemsListFragment
             EventBus.getDefault().post(new clsEvents.readLabPasswordDataComplete());
             if (mPasswordsData != null) {

@@ -22,7 +22,7 @@ import lbconsulting.com.passwords.classes.clsEvents;
 /**
  * A fragment that allows the editing of a Credit Card
  */
-public class PasswordFragment extends Fragment implements View.OnClickListener {
+public class AppPasswordFragment extends Fragment implements View.OnClickListener {
 
     // fragment state variables
     private static final String ARG_IS_FIRST_TIME = "isFirstTime";
@@ -37,22 +37,22 @@ public class PasswordFragment extends Fragment implements View.OnClickListener {
     private View line1;
     private View line2;
 
-    public static PasswordFragment newInstance(boolean isFirstTime) {
-        PasswordFragment fragment = new PasswordFragment();
+    public static AppPasswordFragment newInstance(boolean isFirstTime) {
+        AppPasswordFragment fragment = new AppPasswordFragment();
         Bundle args = new Bundle();
         args.putBoolean(ARG_IS_FIRST_TIME, isFirstTime);
         fragment.setArguments(args);
         return fragment;
     }
 
-    public PasswordFragment() {
+    public AppPasswordFragment() {
         // Required empty public constructor
     }
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        MyLog.i("PasswordFragment", "onCreate()");
+        MyLog.i("AppPasswordFragment", "onCreate()");
 
         if (getArguments() != null) {
             mIsFirstTime = getArguments().getBoolean(ARG_IS_FIRST_TIME);
@@ -65,8 +65,8 @@ public class PasswordFragment extends Fragment implements View.OnClickListener {
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
-        MyLog.i("PasswordFragment", "onCreateView()");
-        View rootView = inflater.inflate(R.layout.frag_password, container, false);
+        MyLog.i("AppPasswordFragment", "onCreateView()");
+        View rootView = inflater.inflate(R.layout.frag_app_password, container, false);
 
         progressBar = (ProgressBar) rootView.findViewById(R.id.progressBar);
 
@@ -89,28 +89,30 @@ public class PasswordFragment extends Fragment implements View.OnClickListener {
     @Override
     public void onActivityCreated(@Nullable Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
-        MyLog.i("PasswordFragment", "onActivityCreated()");
+        MyLog.i("AppPasswordFragment", "onActivityCreated()");
     }
 
 
     @Override
     public void onSaveInstanceState(Bundle outState) {
         super.onSaveInstanceState(outState);
-        MyLog.i("PasswordFragment", "onSaveInstanceState()");
+        MyLog.i("AppPasswordFragment", "onSaveInstanceState()");
     }
 
     @Override
     public void onResume() {
         super.onResume();
-        MyLog.i("PasswordFragment", "onResume()");
+        MyLog.i("AppPasswordFragment", "onResume()");
         MySettings.setActiveFragmentID(MySettings.FRAG_APP_PASSWORD);
         updateUI();
+        // TODO: Show soft keyboard
     }
 
     private void updateUI() {
-        // TODO: 3/24/2015 remove Test Password
+        // TODO: Remove Test Password
         txtAppPassword.setText("Test Password");
-        btnSelectDropboxFolder.setText("Select Dropbox Folder\n\nCurrent folder: " + MySettings.getDropboxFilename());
+        btnSelectDropboxFolder.setText("Select Dropbox Folder\n\nCurrent folder: "
+                + MySettings.getDropboxFilename());
     }
 
     public void onEvent(clsEvents.readLabPasswordDataComplete event) {
@@ -120,7 +122,7 @@ public class PasswordFragment extends Fragment implements View.OnClickListener {
     @Override
     public void onPause() {
         super.onPause();
-        MyLog.i("PasswordFragment", "onPause()");
+        MyLog.i("AppPasswordFragment", "onPause()");
     }
 
 
@@ -128,7 +130,7 @@ public class PasswordFragment extends Fragment implements View.OnClickListener {
     public void onDestroy() {
         super.onDestroy();
         EventBus.getDefault().unregister(this);
-        MyLog.i("PasswordFragment", "onDestroy()");
+        MyLog.i("AppPasswordFragment", "onDestroy()");
     }
 
 

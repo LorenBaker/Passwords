@@ -2,7 +2,12 @@ package lbconsulting.com.passwords.classes;
 
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.preference.PreferenceManager;
 
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.security.NoSuchAlgorithmException;
 
@@ -20,6 +25,8 @@ public class MySettings {
     private static final String SETTING_ACTIVE_LIST_VIEW_ID = "arg_active_list_view";
     private static final String SETTING_ACTIVE_USER_ID = "arg_active_user_id";
     private static final String SETTING_APP_PASSWORD = "appPasswordKey";
+    private static final String SETTING_APP_PASSWORD_SAVED_TIME = "appPasswordSavedTime";
+
     private static final String SETTING_ACTIVE_FRAGMENT_ID = "activeFragmentID";
     private static final String SETTING_ACTIVE_ITEM_ID = "activeItemID";
     private static final String SETTING_SEARCH_TEXT = "searchText";
@@ -32,7 +39,9 @@ public class MySettings {
     private static final String DROPBOX_FILENAME = "/JsonTest.txt";
     //private static final String DROPBOX_FILENAME = DEFAULT_DROPBOX_PATH + "/JsonTest.txt";
 
-    public static final int DEFAULT_LONGEVITY_MIN = 15;
+    public static final long DEFAULT_LONGEVITY_MILLISECONDS = 15 * 60000;
+
+    public static final String PASSWORDS_FILENAME = "passwordsFile";
 
     public static final String ARG_ACTIVE_FRAGMENT = "arg_active_fragment";
     public static final int FRAG_ITEMS_LIST = 10;
@@ -140,27 +149,40 @@ public class MySettings {
         editor.commit();
     }
 
-    public static int getPasswordLongevity() {
+    public static long getPasswordLongevity() {
         SharedPreferences passwordsSavedState =
                 mContext.getSharedPreferences(PASSWORDS_SAVED_STATES, 0);
-        return passwordsSavedState.getInt(SETTING_PASSWORD_LONGEVITY, 15);
+        return passwordsSavedState.getLong(SETTING_PASSWORD_LONGEVITY, DEFAULT_LONGEVITY_MILLISECONDS);
     }
 
-    public static void setPasswordLongevity(int passwordLongevity) {
+    public static void setPasswordLongevity(long passwordLongevity) {
         SharedPreferences passwordsSavedState =
                 mContext.getSharedPreferences(PASSWORDS_SAVED_STATES, 0);
         SharedPreferences.Editor editor = passwordsSavedState.edit();
-        editor.putInt(SETTING_PASSWORD_LONGEVITY, passwordLongevity);
+        editor.putLong(SETTING_PASSWORD_LONGEVITY, passwordLongevity);
         editor.commit();
     }
 
     public static String getAppPassword() {
         SharedPreferences passwordsSavedState =
                 mContext.getSharedPreferences(PASSWORDS_SAVED_STATES, 0);
-        return passwordsSavedState.getString(SETTING_APP_PASSWORD, NOT_AVAILABLE);
+
+        String appPassword = NOT_AVAILABLE;
+        long passwordSavedTime = getPasswordSavedTime();
+        long elapsedTimeMs = System.currentTimeMillis() - passwordSavedTime;
+        long passwordLongevity = getPasswordLongevity();
+        if (elapsedTimeMs < passwordLongevity) {
+            // TODO: decrypt appPassword
+            appPassword = passwordsSavedState.getString(SETTING_APP_PASSWORD, NOT_AVAILABLE);
+        }
+
+        return appPassword;
     }
 
     public static void setAppPassword(String appPassword) {
+        MyLog.i("MySettings", "setAppPassword to: " + appPassword);
+        // TODO: encrypt appPassword
+        setPasswordSavedTime();
         SharedPreferences passwordsSavedState =
                 mContext.getSharedPreferences(PASSWORDS_SAVED_STATES, 0);
         SharedPreferences.Editor editor = passwordsSavedState.edit();
@@ -168,12 +190,23 @@ public class MySettings {
         editor.commit();
     }
 
-    public static void resetAppPassword() {
+    public static long getPasswordSavedTime() {
+        SharedPreferences passwordsSavedState =
+                mContext.getSharedPreferences(PASSWORDS_SAVED_STATES, 0);
+        return passwordsSavedState.getLong(SETTING_APP_PASSWORD_SAVED_TIME, -1);
+    }
+
+    private static void setPasswordSavedTime() {
+        long currentTime = System.currentTimeMillis();
         SharedPreferences passwordsSavedState =
                 mContext.getSharedPreferences(PASSWORDS_SAVED_STATES, 0);
         SharedPreferences.Editor editor = passwordsSavedState.edit();
-        editor.putString(SETTING_APP_PASSWORD, NOT_AVAILABLE);
+        editor.putLong(SETTING_APP_PASSWORD_SAVED_TIME, currentTime);
         editor.commit();
+    }
+
+    public static void resetAppPassword() {
+        setAppPassword(NOT_AVAILABLE);
     }
 
     public static int getActivePasswordItemID() {
