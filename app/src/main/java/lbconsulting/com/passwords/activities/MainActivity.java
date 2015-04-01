@@ -89,7 +89,7 @@ public class MainActivity extends FragmentActivity {
         mLastPasswordItemID = lastPasswordItemID;
     }
 
-    private static int mLastUserID;
+    private static int mLastUserID = 0;
 
     public static int getLastUserID() {
         return mLastUserID;
@@ -184,8 +184,8 @@ public class MainActivity extends FragmentActivity {
         super.onCreate(savedInstanceState);
         MyLog.i("MainActivity", "onCreate()");
         setContentView(R.layout.activity_main);
-        EventBus.getDefault().register(this);
 
+        EventBus.getDefault().register(this);
         MySettings.setContext(this);
 
         mActionBar = getActionBar();
@@ -226,13 +226,13 @@ public class MainActivity extends FragmentActivity {
             if (resultCode == Activity.RESULT_OK) {
                 // ... Start using Dropbox files.
                 MyLog.i("MainActivity", "onActivityResult: RESULT_OK");
+                mPasswordsData = new clsLabPasswords();
 
             } else {
                 MyLog.e("MainActivity", "onActivityResult: Link failed or was cancelled by the user");
                 // ... Link failed or was cancelled by the user.
             }
-/*        } else if (requestCode == REQUEST_SETTINGS) {
-            Toast.makeText(this, "Settings Changed", Toast.LENGTH_SHORT).show();*/
+
 
         } else {
             super.onActivityResult(requestCode, resultCode, data);
@@ -342,7 +342,7 @@ public class MainActivity extends FragmentActivity {
                     fm.beginTransaction()
                             .setTransition(FragmentTransaction.TRANSIT_FRAGMENT_FADE)
                             .replace(R.id.fragment_container,
-                                    SettingsFragment.newInstance(mArgBoolean), "FRAG_SETTINGS")
+                                    SettingsFragment.newInstance(), "FRAG_SETTINGS")
                             .addToBackStack("FRAG_SETTINGS")
                             .commit();
                     break;
@@ -534,7 +534,8 @@ public class MainActivity extends FragmentActivity {
                 String appPassword = MySettings.getAppPassword();
                 if (appPassword.equals(MySettings.NOT_AVAILABLE)) {
                     MySettings.setActiveFragmentID(MySettings.FRAG_APP_PASSWORD);
-                    mArgBoolean = true;
+                    // Not changing the password
+                    mArgBoolean = false;
                 } else {
                     openAndReadLabPasswordDataAsync();
                 }
@@ -558,7 +559,6 @@ public class MainActivity extends FragmentActivity {
     }
 
     public static void openAndReadLabPasswordDataAsync() {
-
         new openAndReadLabPasswordData().execute();
     }
 
@@ -570,7 +570,7 @@ public class MainActivity extends FragmentActivity {
 
         try {
             dbxFs.awaitFirstSync();
-            //dbxFs.syncNowAndWait();
+            dbxFs.syncNowAndWait();
 
             // check that there is a valid dropbox folder
             DbxPath folderPath = new DbxPath(MySettings.getDropboxFolderName());
@@ -601,7 +601,7 @@ public class MainActivity extends FragmentActivity {
                 mJsonDataFile = dbxFs.create(filePath);
             }
             // start listening for changes
-            mJsonDataFile.addListener(mJsonDataFileListener);
+            // mJsonDataFile.addListener(mJsonDataFileListener);
 
 
         } catch (DbxException e) {
@@ -636,11 +636,13 @@ public class MainActivity extends FragmentActivity {
         }
 
         if (!encryptedContents.isEmpty()) {
+            MyLog.i("MainActivity", "readData: encryptedContents length = " + encryptedContents.length());
             String decryptedContents = "";
             try {
                 CryptLib mCrypt = new CryptLib();
                 decryptedContents = mCrypt.decrypt(encryptedContents,
                         MySettings.Credentials.getKey(), MySettings.Credentials.getIV());
+                MyLog.i("MainActivity", "readData: decryptedContents length = " + decryptedContents.length());
 
             } catch (InvalidKeyException e) {
                 MyLog.e("MainActivity", "readData: InvalidKeyException");
@@ -858,16 +860,24 @@ public class MainActivity extends FragmentActivity {
         }
     }
 
+    public static void openAndReadPasswordData() {
+        new openAndReadLabPasswordData().execute();
+    }
+
     public static class openAndReadLabPasswordData extends AsyncTask<Void, Void, Void> {
         @Override
         protected void onPreExecute() {
             super.onPreExecute();
-            MyLog.i("openAndReadLabPasswordData", "onPreExecute");
+            MyLog.i("openAndReadLabPasswordData", "onPreExecute()");
+            // stop listening for json data file changes
+            if (mJsonDataFile != null) {
+                mJsonDataFile.removeListener(mJsonDataFileListener);
+            }
         }
 
         @Override
         protected Void doInBackground(Void... params) {
-            MyLog.i("openAndReadLabPasswordData", "doInBackground");
+            MyLog.i("openAndReadLabPasswordData", "doInBackground()");
             openJsonDataFile();
             readData();
             return null;
@@ -876,15 +886,20 @@ public class MainActivity extends FragmentActivity {
         @Override
         protected void onPostExecute(Void aVoid) {
             super.onPostExecute(aVoid);
-            // if AppPasswordFragment is visible ...
-            // then the following post will open the PasswordItemsListFragment
-            EventBus.getDefault().post(new clsEvents.readLabPasswordDataComplete());
+            // start listening for changes
+            if (mJsonDataFile != null) {
+                mJsonDataFile.addListener(mJsonDataFileListener);
+            }
             if (mPasswordsData != null) {
-                MyLog.i("openAndReadLabPasswordData", "onPostExecute: mPasswordsData not null.");
+                int numberOfItems = mPasswordsData.getPasswordItems().size();
+                int numberOfUsers = mPasswordsData.getUsers().size();
+                MyLog.i("openAndReadLabPasswordData", "onPostExecute: "
+                        + numberOfItems + " items. " + numberOfUsers + " users.");
                 updateUI();
             } else {
-                MyLog.i("openAndReadLabPasswordData", "onPostExecute: mPasswordsData is NULL.");
+                MyLog.e("openAndReadLabPasswordData", "onPostExecute: mPasswordsData is NULL.");
             }
+            // }
             mIsDirty = false;
         }
     }

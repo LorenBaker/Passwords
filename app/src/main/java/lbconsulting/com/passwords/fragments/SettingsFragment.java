@@ -36,11 +36,7 @@ public class SettingsFragment extends Fragment implements View.OnClickListener {
 
     private ArrayList<clsUsers> mUsers;
     private clsUsers mActiveUser;
-    private static final String ARG_IS_FIRST_TIME = "isFirstTime";
-    private boolean mIsFirstTime = false;
 
-    /*    private TextView tvFirstTimeMessage;
-        private View line;*/
     private Button btnSelectUser;
     private Button btnCreateNewUser;
     private Button btnEditUserName;
@@ -48,11 +44,8 @@ public class SettingsFragment extends Fragment implements View.OnClickListener {
     private Button btnSelectDropboxFolder;
 
 
-    public static SettingsFragment newInstance(boolean isFirstTime) {
+    public static SettingsFragment newInstance() {
         SettingsFragment fragment = new SettingsFragment();
-        Bundle args = new Bundle();
-        args.putBoolean(ARG_IS_FIRST_TIME, isFirstTime);
-        fragment.setArguments(args);
         return fragment;
     }
 
@@ -64,13 +57,7 @@ public class SettingsFragment extends Fragment implements View.OnClickListener {
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         MyLog.i("SettingsFragment", "onCreate()");
-
-        if (getArguments() != null) {
-            mIsFirstTime = getArguments().getBoolean(ARG_IS_FIRST_TIME);
-        }
-
         setHasOptionsMenu(true);
-
     }
 
     @Override
@@ -79,15 +66,6 @@ public class SettingsFragment extends Fragment implements View.OnClickListener {
         MyLog.i("SettingsFragment", "onCreateView()");
         View rootView = inflater.inflate(R.layout.frag_settings, container, false);
 
-/*        line = (View) rootView.findViewById(R.id.line1);
-        tvFirstTimeMessage = (TextView) rootView.findViewById(R.id.tvFirstTimeMessage);*/
-/*        if (!mIsFirstTime) {
-            tvFirstTimeMessage.setVisibility(View.GONE);
-            line.setVisibility(View.GONE);
-        } else {
-            tvFirstTimeMessage.setText("Step 1: Select Dropbox folder.\nStep 2: Create new user.");
-            tvFirstTimeMessage.setTypeface(null, Typeface.BOLD);
-        }*/
         btnSelectUser = (Button) rootView.findViewById(R.id.btnSelectUser);
         btnCreateNewUser = (Button) rootView.findViewById(R.id.btnCreateNewUser);
         btnEditUserName = (Button) rootView.findViewById(R.id.btnEditUserName);
@@ -111,13 +89,6 @@ public class SettingsFragment extends Fragment implements View.OnClickListener {
         getActivity().getActionBar().setDisplayHomeAsUpEnabled(true);
     }
 
-
-    @Override
-    public void onSaveInstanceState(Bundle outState) {
-        super.onSaveInstanceState(outState);
-        MyLog.i("SettingsFragment", "onSaveInstanceState()");
-    }
-
     @Override
     public void onResume() {
         super.onResume();
@@ -132,17 +103,17 @@ public class SettingsFragment extends Fragment implements View.OnClickListener {
             if (mUsers != null) {
                 mActiveUser = MySettings.getActiveUser();
                 if (mActiveUser != null) {
-                    btnSelectUser.setText("Select User\n\nCurrent user: " + mActiveUser.getUserName());
+                    btnSelectUser.setText(getString(R.string.btnSelectUser_text) + mActiveUser.getUserName());
                 } else {
-                    btnSelectUser.setText("Select User\n\nCurrent user: NONE");
+                    btnSelectUser.setText(getString(R.string.btnSelectUser_text) + getString(R.string.none_text));
                 }
             }
             int passwordLongevity = (int) MySettings.getPasswordLongevity() / 60000;
             String longevityDescription = getLongevityDescription(passwordLongevity);
             btnSelectPasswordLongevity.setText("Select Password Longevity\n\nCurrent Longevity: " + longevityDescription);
 
-            String btnSelectDropboxFolderText = "Select Dropbox Folder\n\nCurrent Folder:\n" + MySettings.getDropboxFolderName();
-            btnSelectDropboxFolder.setText(btnSelectDropboxFolderText);
+            btnSelectDropboxFolder.setText(getString(R.string.btnSelectDropboxFolder_setText)
+                    + MySettings.getDropboxFolderName());
         }
     }
 
@@ -424,6 +395,7 @@ public class SettingsFragment extends Fragment implements View.OnClickListener {
     }
 
     private boolean isUnique(String newUserName) {
+        // TODO: Move to Main Activity ??
         boolean result = true;
         for (clsUsers user : mUsers) {
             if (user.getUserName().equalsIgnoreCase(newUserName)) {

@@ -2,4 +2,38 @@
     <string name="app_name">Passwords</string>
     <string name="title_password_item_detail">Password Item Detail</string>
 
+    <string name="tvFirstTimeMessage_text_Step1">
+        Getting started:\n
+        Step1: Select Dropbox folder</string>
+
+        <string name="tvFirstTimeMessage_text_Step2a">
+        Getting started:\n
+        Step2: Enter your password, then click OK</string>
+
+        <string name="tvFirstTimeMessage_text_Step3a">
+        Getting started:\n
+        Step3: Select user, then click OK</string>
+
+        <string name="tvFirstTimeMessage_text_Step2b">
+        Getting started:\n
+        Step2: Create new user</string>
+
+        <string name="tvFirstTimeMessage_text_Step3b">
+        Getting started:\n
+        Step3: Enter your password, then click OK</string>
+
+    <string name="txtAppPassword_hint">Password</string>
+    <string name="btnDisplay_text">Display</string>
+    <string name="btnCreateNewUser_text">Create New User</string>
+    <string name="btnSelectDropboxFolder_text">Select Dropbox Folder\nCurrent folder:\n</string>
+    <string name="btnOK_text">OK</string>
+    <string name="btnEditUserName_text">Edit User Name</string>
+    <string name="btnChangeAppPassword_text">Change Application Password</string>
+    <string name="btnSelectDropboxFolder_setText">"Select Dropbox Folder\nCurrent folder:\n"</string>
+    <string name="btnDisplay_setText_Display">Display</string>
+    <string name="btnDisplay_setText_Hide">Hide</string>
+    <string name="btnSelectUser_text">Select User\nCurrent user: </string>
+    <string name="btnSelectUser_dialog_setTitle">Select User</string>
+    <string name="none_text">NONE</string>
+
 </resources>

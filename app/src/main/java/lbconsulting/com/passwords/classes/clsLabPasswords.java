@@ -6,6 +6,11 @@ import java.util.ArrayList;
  * Created by Loren on 3/8/2015.
  */
 public class clsLabPasswords {
+
+    private ArrayList<clsUsers> Users = new ArrayList<>();
+    private ArrayList<clsItemTypes> ItemTypes = new ArrayList<>();
+    private ArrayList<clsPasswordItem> PasswordItems = new ArrayList<>();
+
     public ArrayList<clsUsers> getUsers() {
         return Users;
     }
@@ -30,9 +35,9 @@ public class clsLabPasswords {
         this.PasswordItems = mPasswordItems;
     }
 
-    private ArrayList<clsUsers> Users = new ArrayList<>();
-    private ArrayList<clsItemTypes> ItemTypes = new ArrayList<>();
-    private ArrayList<clsPasswordItem> PasswordItems = new ArrayList<>();
+    public clsLabPasswords(){
+
+    }
 
     public clsUsers getUser(int userID) {
         clsUsers result = null;

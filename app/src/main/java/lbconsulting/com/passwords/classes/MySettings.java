@@ -13,6 +13,7 @@ import java.security.NoSuchAlgorithmException;
 
 import de.greenrobot.event.EventBus;
 import lbconsulting.com.passwords.activities.MainActivity;
+import lbconsulting.com.passwords.fragments.AppPasswordFragment;
 
 /**
  * Created by Loren on 3/5/2015.
@@ -31,11 +32,12 @@ public class MySettings {
     private static final String SETTING_ACTIVE_ITEM_ID = "activeItemID";
     private static final String SETTING_SEARCH_TEXT = "searchText";
     private static final String SETTING_PASSWORD_LONGEVITY = "passwordLongevity";
+    private static final String STATE_APP_PASSWORD_FRAGMENT = "appPasswordFragmentState";
 
 
     private static final String SETTING_DROPBOX_FOLDER_NAME = "dropboxFolderName";
     // TODO: 3/25/2015 set default dropbox path
-    private static final String DEFAULT_DROPBOX_PATH = "/BakerShare/LABPasswords";
+    private static final String DEFAULT_DROPBOX_PATH = "No Folder Selected";
     private static final String DROPBOX_FILENAME = "/JsonTest.txt";
     //private static final String DROPBOX_FILENAME = DEFAULT_DROPBOX_PATH + "/JsonTest.txt";
 
@@ -76,8 +78,7 @@ public class MySettings {
     public static int getActiveUserID() {
         SharedPreferences passwordsSavedState =
                 mContext.getSharedPreferences(PASSWORDS_SAVED_STATES, 0);
-        // TODO: 3/25/2015 set the default user ID to -1 ??
-        return passwordsSavedState.getInt(SETTING_ACTIVE_USER_ID, 1);
+        return passwordsSavedState.getInt(SETTING_ACTIVE_USER_ID, -1);
     }
 
     public static void setActiveUserID(int userID) {
@@ -213,7 +214,6 @@ public class MySettings {
         SharedPreferences passwordsSavedState =
                 mContext.getSharedPreferences(PASSWORDS_SAVED_STATES, 0);
         return passwordsSavedState.getInt(SETTING_ACTIVE_ITEM_ID, -1);
-
     }
 
     public static void setActivePasswordItemID(int activePasswordItemID) {
@@ -223,6 +223,22 @@ public class MySettings {
         editor.putInt(SETTING_ACTIVE_ITEM_ID, activePasswordItemID);
         editor.commit();
     }
+
+
+    public static int getAppPasswordState() {
+        SharedPreferences passwordsSavedState =
+                mContext.getSharedPreferences(PASSWORDS_SAVED_STATES, 0);
+        return passwordsSavedState.getInt(STATE_APP_PASSWORD_FRAGMENT, AppPasswordFragment.STATE_STEP_0);
+    }
+
+    public static void setAppPasswordState(int appPasswordState) {
+        SharedPreferences passwordsSavedState =
+                mContext.getSharedPreferences(PASSWORDS_SAVED_STATES, 0);
+        SharedPreferences.Editor editor = passwordsSavedState.edit();
+        editor.putInt(STATE_APP_PASSWORD_FRAGMENT, appPasswordState);
+        editor.commit();
+    }
+
 
     public static int getActiveListViewID() {
         SharedPreferences passwordsSavedState =
