@@ -36,9 +36,8 @@ public class MySettings {
 
 
     private static final String SETTING_DROPBOX_FOLDER_NAME = "dropboxFolderName";
-    // TODO: 3/25/2015 set default dropbox path
     private static final String DEFAULT_DROPBOX_PATH = "No Folder Selected";
-    private static final String DROPBOX_FILENAME = "/JsonTest.txt";
+    private static final String DROPBOX_FILENAME = "/PasswordsDatafile.txt";
     //private static final String DROPBOX_FILENAME = DEFAULT_DROPBOX_PATH + "/JsonTest.txt";
 
     public static final long DEFAULT_LONGEVITY_MILLISECONDS = 15 * 60000;
@@ -180,6 +179,12 @@ public class MySettings {
         return appPassword;
     }
 
+    public static String getSavedAppPassword() {
+        SharedPreferences passwordsSavedState =
+                mContext.getSharedPreferences(PASSWORDS_SAVED_STATES, 0);
+        return passwordsSavedState.getString(SETTING_APP_PASSWORD, NOT_AVAILABLE);
+    }
+
     public static void setAppPassword(String appPassword) {
         MyLog.i("MySettings", "setAppPassword to: " + appPassword);
         // TODO: encrypt appPassword
@@ -270,27 +275,21 @@ public class MySettings {
 
     public static class Credentials {
         private final static String mIV = "74172ca8e67761d2";
-        // TODO: 3/11/2015 remove Test Password
-        //private static String mPassword = "Test Password";
-        private static String mPassword = getAppPassword();
 
         public static String getIV() {
             return mIV;
         }
 
         public static String getPassword() {
-            return mPassword;
-        }
-
-        public static void setPassword(String password) {
-            mPassword = password;
+            return getSavedAppPassword();
         }
 
         public static String getKey() {
             String key = "";
+            String savedPassword = getSavedAppPassword();
             try {
-                if (!mPassword.isEmpty()) {
-                    key = CryptLib.SHA256(mPassword, 32);
+                if (!savedPassword.isEmpty()) {
+                    key = CryptLib.SHA256(savedPassword, 32);
                 }
             } catch (NoSuchAlgorithmException e) {
                 MyLog.e("Credentials", "getKey: NoSuchAlgorithmException");

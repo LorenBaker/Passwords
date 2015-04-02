@@ -16,6 +16,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.Toast;
 
 import java.util.ArrayList;
 
@@ -312,6 +313,7 @@ public class SettingsFragment extends Fragment implements View.OnClickListener {
                 break;
 
             case R.id.btnSelectPasswordLongevity:
+                // TODO: show current longevity on btnSelectPasswordLongevity
                 // Strings to Show In Dialog with Radio Buttons
                 final CharSequence[] items = {"None", "5 min", "15 min", "30 min", "1 hr", "4 hrs", "8 hrs"};
 
@@ -390,6 +392,10 @@ public class SettingsFragment extends Fragment implements View.OnClickListener {
             case R.id.btnSelectDropboxFolder:
                 EventBus.getDefault().post(new clsEvents.replaceFragment(-1, MySettings.FRAG_DROPBOX_LIST, false));
                 break;
+
+            case R.id.btnChangeAppPassword:
+                // TODO: implement Change App Password
+                Toast.makeText(getActivity(), "btnChangeAppPassword Clicked", Toast.LENGTH_SHORT).show();
         }
 
     }
@@ -408,9 +414,6 @@ public class SettingsFragment extends Fragment implements View.OnClickListener {
 
     private void selectActiveUser() {
         MySettings.setActiveUserID(mActiveUser.getUserID());
-        // TODO: 3/16/2015 use plurals
-        String actionBarTitle = mActiveUser.getUserName() + "'s Passwords";
-        MainActivity.setActionBarTitle(actionBarTitle);
         updateUI();
         EventBus.getDefault().post(new clsEvents.isDirty());
         EventBus.getDefault().post(new clsEvents.replaceFragment(-1, MySettings.FRAG_ITEMS_LIST, false));

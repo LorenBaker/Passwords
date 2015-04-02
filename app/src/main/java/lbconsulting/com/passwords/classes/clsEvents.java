@@ -14,6 +14,33 @@ public class clsEvents {
         }
     }
 
+    public static class downLoadResults {
+        private int mResults;
+
+        public downLoadResults(int results) {
+            mResults = results;
+        }
+
+        public int getDownLoadResults() {
+            return mResults;
+        }
+    }
+
+    public static class openAndReadLabPasswordDataAsync{
+        public openAndReadLabPasswordDataAsync(){
+        }
+    }
+
+    public static class readLabPasswordDataAsync{
+        public readLabPasswordDataAsync(){
+        }
+    }
+
+    public static class openAndSaveLabPasswordDataAsync{
+        public openAndSaveLabPasswordDataAsync(){
+        }
+    }
+
     public static class isDirty {
         public isDirty() {
         }
@@ -24,13 +51,14 @@ public class clsEvents {
         }
     }
 
-    public static class showOkDialog{
+    public static class showOkDialog {
 
         String mTitle;
         String mMessage;
-        public showOkDialog(String title, String message){
-            mTitle=title;
-            mMessage=message;
+
+        public showOkDialog(String title, String message) {
+            mTitle = title;
+            mMessage = message;
         }
 
         public String getTitle() {
@@ -61,7 +89,7 @@ public class clsEvents {
             return mFragmentID;
         }
 
-        public boolean getIsNewPasswordItem(){
+        public boolean getIsNewPasswordItem() {
             return mIsNewPasswordItem;
         }
     }

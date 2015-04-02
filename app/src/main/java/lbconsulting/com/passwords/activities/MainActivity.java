@@ -62,9 +62,9 @@ import lbconsulting.com.passwords.fragments.SettingsFragment;
 
 
 public class MainActivity extends FragmentActivity {
-    // TODO: 3/28/2015 Look at menu item order
+    // TODO: Look at menu item order
+    // TODO: Make Passwords App Icons
 
-    ///private static final int REQUEST_SETTINGS = 555;
 
     private static final int REQUEST_LINK_TO_DBX = 999;  // This value is up to you
     private static final String APP_KEY = "kz0qsqlw52f41cy";
@@ -80,6 +80,22 @@ public class MainActivity extends FragmentActivity {
 
     private static DbxFile.Listener mJsonDataFileListener;
     private static DbxFile mJsonDataFile = null;
+
+    public static final int OPEN_FILE_RESULT_FAIL = -1;
+    public static final int OPEN_FILE_RESULT_SUCCESS = 2;
+
+    public static final int OPEN_AND_SAVE_FILE_RESULT_FAIL = -5;
+    public static final int OPEN_AND_SAVE_FILE_RESULT_SUCCESS = 3;
+
+    public static final int DOWNLOAD_RESULT_FAIL_READING_ENCRYPTED_FILE = -2;
+    public static final int DOWNLOAD_RESULT_FAIL_DECRYPTING_FILE = -3;
+    public static final int DOWNLOAD_RESULT_FAIL_PARSING_JSON = -4;
+    public static final int DOWNLOAD_RESULT_SUCCESS = 1;
+    //private int mDownloadResult = DOWNLOAD_RESULT_FAIL_READING_ENCRYPTED_FILE;
+
+    public static boolean isPasswordDataFileOpen() {
+        return mJsonDataFile != null;
+    }
 
     public static int getLastPasswordItemID() {
         return mLastPasswordItemID;
@@ -115,8 +131,6 @@ public class MainActivity extends FragmentActivity {
     public static void setActionBarTitle(String title) {
         mActionBar.setTitle(title);
     }
-
-    private static boolean mIsDirty = false;
 
     private boolean mTwoPane;
     private FrameLayout mFragment_container;
@@ -225,11 +239,11 @@ public class MainActivity extends FragmentActivity {
         if (requestCode == REQUEST_LINK_TO_DBX) {
             if (resultCode == Activity.RESULT_OK) {
                 // ... Start using Dropbox files.
-                MyLog.i("MainActivity", "onActivityResult: RESULT_OK");
+                MyLog.i("MainActivity", "onActivityResult: Request link to Dropbox; RESULT_OK");
                 mPasswordsData = new clsLabPasswords();
 
             } else {
-                MyLog.e("MainActivity", "onActivityResult: Link failed or was cancelled by the user");
+                MyLog.e("MainActivity", "onActivityResult: Request link to Dropbox failed or was cancelled by the user");
                 // ... Link failed or was cancelled by the user.
             }
 
@@ -348,6 +362,7 @@ public class MainActivity extends FragmentActivity {
                     break;
 
                 case MySettings.FRAG_APP_PASSWORD:
+                    clearBackStack();
                     fm.beginTransaction()
                             .setTransition(FragmentTransaction.TRANSIT_FRAGMENT_FADE)
                             .replace(R.id.fragment_container,
@@ -411,7 +426,20 @@ public class MainActivity extends FragmentActivity {
     }
 
     public void onEvent(clsEvents.isDirty event) {
-        mIsDirty = true;
+        // save file but don't show result dialog
+        new writeLabPasswordData(this).execute(false);
+    }
+
+    public void onEvent(clsEvents.openAndReadLabPasswordDataAsync event) {
+        new openAndReadLabPasswordData().execute();
+    }
+
+    public void onEvent(clsEvents.readLabPasswordDataAsync event) {
+        new readLabPasswordData().execute();
+    }
+
+    public void onEvent(clsEvents.openAndSaveLabPasswordDataAsync event) {
+        new openAndSaveLabPasswordData().execute();
     }
 
     @Override
@@ -443,7 +471,8 @@ public class MainActivity extends FragmentActivity {
 
         //noinspection SimplifiableIfStatement
         if (id == R.id.action_save_to_dropbox) {
-            saveEncryptedData(true);
+            // save file and show results dialog
+            new writeLabPasswordData(this).execute(true);
             return true;
 
         } else if (id == R.id.action_settings) {
@@ -476,19 +505,16 @@ public class MainActivity extends FragmentActivity {
     protected void onPause() {
         MyLog.i("MainActivity", "onPause()");
 
-        if (mIsDirty) {
+/*        if (mIsDirty) {
             saveEncryptedData(false);
-        }
+        }*/
 
         if (mJsonDataFile != null) {
             // stop listening for json data file changes
-            mJsonDataFile.removeListener(mJsonDataFileListener);
+            stopListeningForChanges();
             // close the json data file
             mJsonDataFile.close();
         }
-
-//        dbxFs.shutDown();
-
         super.onPause();
     }
 
@@ -520,7 +546,6 @@ public class MainActivity extends FragmentActivity {
                             MyLog.i("MainActivity", "onFileChange: Newer status: " + status);
 
                             if (status != null && status.isCached) {
-                                MyLog.i("MainActivity", "onFileChange: Newer status.isCached");
                                 mJsonDataFile.update();
                                 MyLog.i("MainActivity", "onFileChange: mJsonDataFile.update()");
                                 new readLabPasswordData().execute();
@@ -534,10 +559,9 @@ public class MainActivity extends FragmentActivity {
                 String appPassword = MySettings.getAppPassword();
                 if (appPassword.equals(MySettings.NOT_AVAILABLE)) {
                     MySettings.setActiveFragmentID(MySettings.FRAG_APP_PASSWORD);
-                    // Not changing the password
-                    mArgBoolean = false;
+                    mArgBoolean = false;  // Not changing the password
                 } else {
-                    openAndReadLabPasswordDataAsync();
+                    new openAndReadLabPasswordData().execute();
                 }
                 showFragments();
             } catch (DbxException.Unauthorized unauthorized) {
@@ -558,14 +582,11 @@ public class MainActivity extends FragmentActivity {
         }
     }
 
-    public static void openAndReadLabPasswordDataAsync() {
-        new openAndReadLabPasswordData().execute();
-    }
-
-    private static void openJsonDataFile() {
+    private int openJsonDataFile() {
+        int result = OPEN_FILE_RESULT_FAIL;
         if (dbxFs == null) {
             MyLog.e("MainActivity", "openJsonDataFile FAILED; dbxFs == null");
-            return;
+            return result;
         }
 
         try {
@@ -580,10 +601,10 @@ public class MainActivity extends FragmentActivity {
                 String title = "Open Data File";
                 String message = "Unable to open data file; the data file does not exist!";
                 EventBus.getDefault().post(new clsEvents.showOkDialog(title, message));
-                return;
+                return result;
             }
 
-            // check
+            // check for the dropbox file
             DbxPath filePath = new DbxPath(MySettings.getDropboxFilename());
             if (mJsonDataFile != null) {
                 mJsonDataFile.close();
@@ -593,25 +614,29 @@ public class MainActivity extends FragmentActivity {
                 mJsonDataFile = dbxFs.open(filePath);
                 if (mJsonDataFile == null) {
                     MyLog.e("MainActivity", "openJsonDataFile FAILED. mJsonDataFile == null");
-                    // TODO: Unable to open JSON data file. Show ok dialog.
-                    return;
+                    return result;
                 }
             } else {
                 MyLog.i("MainActivity", "openJsonDataFile: JSON file does not exist... creating file.");
                 mJsonDataFile = dbxFs.create(filePath);
             }
-            // start listening for changes
-            // mJsonDataFile.addListener(mJsonDataFileListener);
-
+            if (mJsonDataFile != null) {
+                result = OPEN_FILE_RESULT_SUCCESS;
+            }
 
         } catch (DbxException e) {
             MyLog.e("MainActivity", "openJsonDataFile: DbxException; " + e.getMessage());
             e.printStackTrace();
         }
+        return result;
     }
 
     private static void updateUI() {
         EventBus.getDefault().post(new clsEvents.updateUI());
+        setUserNameInActionBar();
+    }
+
+    public static void setUserNameInActionBar(){
         clsUsers activeUser = mPasswordsData.getUser(MySettings.getActiveUserID());
         if (activeUser != null) {
             // TODO: Implement plurals
@@ -619,12 +644,13 @@ public class MainActivity extends FragmentActivity {
         }
     }
 
-    private static void readData() {
+    private int readData() {
+        int result = DOWNLOAD_RESULT_FAIL_READING_ENCRYPTED_FILE;
         String encryptedContents = "";
         try {
             if (mJsonDataFile == null) {
                 MyLog.e("MainActivity", "readData FAILED. mJsonDataFile == null");
-                return;
+                return result;
             }
 
             MyLog.d("MainActivity", "readData: mJsonDataFile.getSyncStatus = " + mJsonDataFile.getSyncStatus());
@@ -636,12 +662,17 @@ public class MainActivity extends FragmentActivity {
         }
 
         if (!encryptedContents.isEmpty()) {
+            result = DOWNLOAD_RESULT_FAIL_DECRYPTING_FILE;
             MyLog.i("MainActivity", "readData: encryptedContents length = " + encryptedContents.length());
             String decryptedContents = "";
             try {
                 CryptLib mCrypt = new CryptLib();
-                decryptedContents = mCrypt.decrypt(encryptedContents,
-                        MySettings.Credentials.getKey(), MySettings.Credentials.getIV());
+                String key = MySettings.Credentials.getKey();
+                String iv = MySettings.Credentials.getIV();
+                decryptedContents = mCrypt.decrypt(encryptedContents, key, iv);
+                if (decryptedContents.length() > 0) {
+                    result = DOWNLOAD_RESULT_FAIL_PARSING_JSON;
+                }
                 MyLog.i("MainActivity", "readData: decryptedContents length = " + decryptedContents.length());
 
             } catch (InvalidKeyException e) {
@@ -685,7 +716,8 @@ public class MainActivity extends FragmentActivity {
                             lastUserID = user.getUserID();
                         }
                     }
-                    MainActivity.setLastUserID(lastUserID);
+                    setLastUserID(lastUserID);
+                    result = DOWNLOAD_RESULT_SUCCESS;
 
                 } else {
                     MyLog.d("MainActivity", "readData PASSWORDS DATA NULL!");
@@ -696,9 +728,11 @@ public class MainActivity extends FragmentActivity {
         } else {
             MyLog.e("MainActivity", "readData: file encryptedContents.isEmpty");
         }
+        return result;
     }
 
-    private void saveEncryptedData(boolean showDialog) {
+    private long saveEncryptedData() {
+        long fileSize = 0;
         // Create JSON file string
         Gson gson = new Gson();
         String jsonFileString = gson.toJson(mPasswordsData, clsLabPasswords.class);
@@ -749,21 +783,29 @@ public class MainActivity extends FragmentActivity {
                 if (mJsonDataFile != null) {
                     // you're going to change the json data file ...
                     // so temporarily stop listening for changes.
-                    mJsonDataFile.removeListener(mJsonDataFileListener);
+                    stopListeningForChanges();
 
                     // write the file
                     mJsonDataFile.writeString(encryptedJsonFileString);
-                    mIsDirty = false;
                     DbxFileInfo fileInfo = dbxFs.getFileInfo(filePath);
-                    long fileSize = fileInfo.size;
-                    if (showDialog) {
-                        showOkDialog(this, "Success.", "Encrypted file saved.\nFile size = "
-                                + NumberFormat.getInstance().format(fileSize) + " bytes.");
-                    }
+                    fileSize = fileInfo.size;
                     MyLog.i("MainActivity", "saveEncryptedData: encrypted file SAVED. File size = " + fileSize);
-
+                    try {
+                        DbxFileStatus status = mJsonDataFile.getSyncStatus();
+                        if (!status.isLatest) {
+                            // There must have been a change while writing the file
+                            // so read the latest file
+                            // TODO: verify that reading data works
+                            MyLog.d("MainActivity", "saveEncryptedData: Changes were made " +
+                                    "to the data file while writing file. Start readData()");
+                            readData();
+                        }
+                    } catch (DbxException e) {
+                        e.printStackTrace();
+                    }
                     // resume listening for changes
-                    mJsonDataFile.addListener(mJsonDataFileListener);
+                    startListeningForChanges();
+
                 }
             }
         } catch (DbxException e) {
@@ -772,6 +814,20 @@ public class MainActivity extends FragmentActivity {
         } catch (IOException e) {
             MyLog.e("MainActivity", "saveEncryptedData: IOException");
             e.printStackTrace();
+        }
+
+        return fileSize;
+    }
+
+    public static void stopListeningForChanges() {
+        if (mJsonDataFile != null) {
+            mJsonDataFile.removeListener(mJsonDataFileListener);
+        }
+    }
+
+    public static void startListeningForChanges() {
+        if (mJsonDataFile != null) {
+            mJsonDataFile.addListener(mJsonDataFileListener);
         }
     }
 
@@ -811,7 +867,6 @@ public class MainActivity extends FragmentActivity {
 
     public static void showOkDialog(Context context, String title, String message) {
         AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(context);
-
         // set dialog title and message
         alertDialogBuilder
                 .setTitle(title)
@@ -830,66 +885,136 @@ public class MainActivity extends FragmentActivity {
         alertDialog.show();
     }
 
-    public static class readLabPasswordData extends AsyncTask<Void, Void, Void> {
+    public class writeLabPasswordData extends AsyncTask<Boolean, Void, Long> {
+        private boolean mShowDialog = false;
+        private Context mContext;
+
+        public writeLabPasswordData(Context context) {
+            mContext = context;
+        }
+
+        @Override
+        protected void onPreExecute() {
+            MyLog.i("writeLabPasswordData", "onPreExecute()");
+            super.onPreExecute();
+        }
+
+        @Override
+        protected Long doInBackground(Boolean... params) {
+            MyLog.i("writeLabPasswordData", "doInBackground()");
+            mShowDialog = params[0];
+            long fileSize = saveEncryptedData();
+            return fileSize;
+        }
+
+        @Override
+        protected void onPostExecute(Long fileSize) {
+            MyLog.i("writeLabPasswordData", "onPostExecute()");
+            String title = "Success.";
+            String message = "Encrypted file saved.\nFile size = "
+                    + NumberFormat.getInstance().format(fileSize) + " bytes.";
+
+            if (mShowDialog) {
+                showOkDialog(mContext, title, message);
+            }
+
+        }
+    }
+
+    public class readLabPasswordData extends AsyncTask<Void, Void, Integer> {
         @Override
         protected void onPreExecute() {
             super.onPreExecute();
             MyLog.i("resetPassword", "onPreExecute");
+            stopListeningForChanges();
         }
 
         @Override
-        protected Void doInBackground(Void... params) {
+        protected Integer doInBackground(Void... params) {
             MyLog.i("readLabPasswordDataData", "doInBackground");
-            readData();
-            return null;
+            int results = readData();
+            return results;
         }
 
         @Override
-        protected void onPostExecute(Void aVoid) {
-            super.onPostExecute(aVoid);
-            // if AppPasswordFragment is visible ...
-            // then the following post will open the PasswordItemsListFragment
-            EventBus.getDefault().post(new clsEvents.readLabPasswordDataComplete());
+        protected void onPostExecute(Integer downloadResult) {
+            super.onPostExecute(downloadResult);
+            startListeningForChanges();
             if (mPasswordsData != null) {
                 MyLog.i("resetPassword", "onPostExecute: mPasswordsData not null.");
                 updateUI();
             } else {
-                MyLog.i("resetPassword", "onPostExecute: mPasswordsData is NULL.");
+                MyLog.e("resetPassword", "onPostExecute: mPasswordsData is NULL.");
             }
-            mIsDirty = false;
+            EventBus.getDefault().post(new clsEvents.downLoadResults(downloadResult));
         }
     }
 
-    public static void openAndReadPasswordData() {
+    public void openAndReadPasswordDataAsync() {
         new openAndReadLabPasswordData().execute();
     }
 
-    public static class openAndReadLabPasswordData extends AsyncTask<Void, Void, Void> {
+    public class openAndSaveLabPasswordData extends AsyncTask<Void, Void, Long> {
+        @Override
+        protected void onPreExecute() {
+            super.onPreExecute();
+            MyLog.i("openAndSaveLabPasswordData", "onPreExecute()");
+            // stop listening for json data file changes
+            stopListeningForChanges();
+        }
+
+        @Override
+        protected Long doInBackground(Void... params) {
+            MyLog.i("openAndSaveLabPasswordData", "doInBackground()");
+            long fileSize = 0;
+            int openResults = openJsonDataFile();
+            if (openResults == OPEN_FILE_RESULT_SUCCESS) {
+                fileSize = saveEncryptedData();
+            }
+            return fileSize;
+        }
+
+        @Override
+        protected void onPostExecute(Long fileSize) {
+            super.onPostExecute(fileSize);
+            MyLog.i("openAndSaveLabPasswordData", "onPostExecute(): Saved file size: " + fileSize);
+
+            // start listening for changes
+            startListeningForChanges();
+            int openAndSaveResults = OPEN_AND_SAVE_FILE_RESULT_FAIL;
+            if (fileSize > 0) {
+                openAndSaveResults = OPEN_AND_SAVE_FILE_RESULT_SUCCESS;
+            }
+            // send result back to AppPasswordFragment
+            EventBus.getDefault().post(new clsEvents.downLoadResults(openAndSaveResults));
+        }
+    }
+
+    public class openAndReadLabPasswordData extends AsyncTask<Void, Void, Integer> {
         @Override
         protected void onPreExecute() {
             super.onPreExecute();
             MyLog.i("openAndReadLabPasswordData", "onPreExecute()");
             // stop listening for json data file changes
-            if (mJsonDataFile != null) {
-                mJsonDataFile.removeListener(mJsonDataFileListener);
-            }
+            stopListeningForChanges();
         }
 
         @Override
-        protected Void doInBackground(Void... params) {
+        protected Integer doInBackground(Void... params) {
             MyLog.i("openAndReadLabPasswordData", "doInBackground()");
-            openJsonDataFile();
-            readData();
-            return null;
+            int results = openJsonDataFile();
+            if (results == OPEN_FILE_RESULT_SUCCESS) {
+                results = readData();
+            }
+            return results;
         }
 
         @Override
-        protected void onPostExecute(Void aVoid) {
-            super.onPostExecute(aVoid);
+        protected void onPostExecute(Integer downloadResults) {
+            super.onPostExecute(downloadResults);
             // start listening for changes
-            if (mJsonDataFile != null) {
-                mJsonDataFile.addListener(mJsonDataFileListener);
-            }
+            startListeningForChanges();
+
             if (mPasswordsData != null) {
                 int numberOfItems = mPasswordsData.getPasswordItems().size();
                 int numberOfUsers = mPasswordsData.getUsers().size();
@@ -899,8 +1024,7 @@ public class MainActivity extends FragmentActivity {
             } else {
                 MyLog.e("openAndReadLabPasswordData", "onPostExecute: mPasswordsData is NULL.");
             }
-            // }
-            mIsDirty = false;
+            EventBus.getDefault().post(new clsEvents.downLoadResults(downloadResults));
         }
     }
 

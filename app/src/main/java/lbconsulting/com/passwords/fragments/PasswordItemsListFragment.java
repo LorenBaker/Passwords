@@ -173,6 +173,7 @@ public class PasswordItemsListFragment extends Fragment
     }
 
     private void updateUI() {
+        MainActivity.setUserNameInActionBar();
         if (MainActivity.getPasswordsData() != null) {
             mAllItems = MainActivity.getPasswordsData().getPasswordItems();
             if (mAllItems != null) {
@@ -319,9 +320,6 @@ public class PasswordItemsListFragment extends Fragment
                     });
                     itemTypesDialog = builder.create();
                     itemTypesDialog.show();
-
-
-                    // TODO: 3/14/2015 Make a dialog asking the user what password type item to create
                 }
 
                 //Toast.makeText(getActivity(), "TO COME: action_new", Toast.LENGTH_SHORT).show();

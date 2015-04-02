@@ -116,7 +116,6 @@ public class DropboxListFragment extends Fragment
             mActivePath = path;
             try {
                 List<DbxFileInfo> listFolders = dbxFs.listFolder(path);
-                // TODO: 3/26/2015 sort listFolders
                 if (listFolders != null) {
                     mDropboxFolders = new ArrayList<>();
                     for (DbxFileInfo folder : listFolders) {

@@ -32,7 +32,7 @@
     <string name="btnSelectDropboxFolder_setText">"Select Dropbox Folder\nCurrent folder:\n"</string>
     <string name="btnDisplay_setText_Display">Display</string>
     <string name="btnDisplay_setText_Hide">Hide</string>
-    <string name="btnSelectUser_text">Select User\nCurrent user: </string>
+    <string name="btnSelectUser_text">Select User\nCurrent user:\u0020</string>
     <string name="btnSelectUser_dialog_setTitle">Select User</string>
     <string name="none_text">NONE</string>
 

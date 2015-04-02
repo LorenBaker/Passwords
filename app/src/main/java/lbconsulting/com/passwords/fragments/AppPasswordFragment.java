@@ -61,6 +61,7 @@ public class AppPasswordFragment extends Fragment implements View.OnClickListene
     private static final int STATE_STEP_3b = 32;
     private static final int STATE_PASSWORD_ONLY = 40;
     private int mState = STATE_STEP_0;
+    private int mDownloadResults = MainActivity.DOWNLOAD_RESULT_FAIL_READING_ENCRYPTED_FILE;
 
 
     public static AppPasswordFragment newInstance(boolean isChangingPassword) {
@@ -93,7 +94,7 @@ public class AppPasswordFragment extends Fragment implements View.OnClickListene
                              Bundle savedInstanceState) {
         MyLog.i("AppPasswordFragment", "onCreateView()");
         View rootView = inflater.inflate(R.layout.frag_app_password, container, false);
-
+        // TODO: Add caption TextView for progressBar
         progressBar = (ProgressBar) rootView.findViewById(R.id.progressBar);
 
         tvFirstTimeMessage = (TextView) rootView.findViewById(R.id.tvFirstTimeMessage);
@@ -146,7 +147,6 @@ public class AppPasswordFragment extends Fragment implements View.OnClickListene
             case STATE_STEP_0:
                 MyLog.i("AppPasswordFragment", "updateUI(): State = STATE_STEP_0");
 
-                EventBus.getDefault().post(new clsEvents.isDirty());
                 showProgressBar();
                 MySettings.setAppPasswordState(STATE_STEP_1);
                 mState = STATE_STEP_1;
@@ -165,54 +165,116 @@ public class AppPasswordFragment extends Fragment implements View.OnClickListene
                 MyLog.i("AppPasswordFragment", "updateUI(): State = STATE_STEP_2");
                 // Select user
                 if (passwordsDataFileExists()) {
-/*                    MySettings.setAppPasswordState(STATE_STEP_2a);
-                    mState = STATE_STEP_2a;*/
+                    // Heading down "Path a"
+                    // Get password from user
                     showStep2a();
                     MySettings.setAppPasswordState(STATE_STEP_3a);
                     mState = STATE_STEP_3a;
-/*                    showProgressBar();
-                    MainActivity.openAndReadPasswordData();*/
                 } else {
-                    /*MySettings.setAppPasswordState(STATE_STEP_2b);
-                    mState = STATE_STEP_2b;*/
+                    // Heading down "Path b"
+                    // Create new user.
                     showStep2b();
                     MySettings.setAppPasswordState(STATE_STEP_3b);
                     mState = STATE_STEP_3b;
                 }
                 break;
 
-/*            case STATE_STEP_2a:
+            case STATE_STEP_2a:
                 MyLog.i("AppPasswordFragment", "updateUI(): State=STATE_STEP_2a");
                 // Select user
                 showStep2a();
                 MySettings.setAppPasswordState(STATE_STEP_3a);
                 mState = STATE_STEP_3a;
-                break;*/
+                break;
 
             case STATE_STEP_3a:
-                MyLog.i("AppPasswordFragment", "updateUI(): State=STATE_STEP_3a");
-                // Select password
+                MyLog.i("AppPasswordFragment", "updateUI(): State=STATE_STEP_3a: Select User");
+                // Select user
                 showStep3a();
-                MySettings.setAppPasswordState(STATE_PASSWORD_ONLY);
-                mState = STATE_PASSWORD_ONLY;
                 break;
 
             case STATE_STEP_3b:
-                MyLog.i("AppPasswordFragment", "updateUI(): State=STATE_STEP_3b");
-                // Select password
+                MyLog.i("AppPasswordFragment", "updateUI(): State=STATE_STEP_3b: Select Password");
+                // Get password from user
                 showStep3b();
-                MySettings.setAppPasswordState(STATE_PASSWORD_ONLY);
-                mState = STATE_PASSWORD_ONLY;
                 break;
         }
     }
 
-/*    public void onEvent(clsEvents.readLabPasswordDataComplete event) {
-        updateUI();
-    }*/
-
     public void onEvent(clsEvents.updateUI event) {
         updateUI();
+    }
+
+    public void onEvent(clsEvents.downLoadResults event) {
+        mDownloadResults = event.getDownLoadResults();
+        if (mDownloadResults == MainActivity.DOWNLOAD_RESULT_SUCCESS) {
+            switch (mState) {
+
+                case STATE_PASSWORD_ONLY:
+                case STATE_STEP_3b:
+                    // we're all done
+                    MySettings.setAppPasswordState(STATE_PASSWORD_ONLY);
+                    mState = STATE_PASSWORD_ONLY;
+                    EventBus.getDefault().post(new clsEvents.replaceFragment(-1, MySettings.FRAG_ITEMS_LIST, false));
+                    break;
+
+                case STATE_STEP_3a:
+                    updateUI();
+                    break;
+            }
+
+        } else if (mDownloadResults == MainActivity.OPEN_AND_SAVE_FILE_RESULT_SUCCESS) {
+            // we're all done
+            MySettings.setAppPasswordState(STATE_PASSWORD_ONLY);
+            mState = STATE_PASSWORD_ONLY;
+            EventBus.getDefault().post(new clsEvents.replaceFragment(-1, MySettings.FRAG_ITEMS_LIST, false));
+
+        } else {
+            // reading password data failed
+            String title = "Reading Datafile Failed";
+            String message = "";
+            switch (mDownloadResults) {
+
+                case MainActivity.OPEN_FILE_RESULT_FAIL:
+                    message = "Unable to open datafile.";
+                    break;
+
+                case MainActivity.DOWNLOAD_RESULT_FAIL_READING_ENCRYPTED_FILE:
+                    message = "Unable to read encrypted datafile from Dropbox folder.";
+                    break;
+
+                case MainActivity.DOWNLOAD_RESULT_FAIL_DECRYPTING_FILE:
+                    message = "Invalid password.\nPlease try again.";
+                    break;
+
+                case MainActivity.DOWNLOAD_RESULT_FAIL_PARSING_JSON:
+                    message = "Unable to parse decrypted datafile.";
+                    break;
+
+                case MainActivity.OPEN_AND_SAVE_FILE_RESULT_FAIL:
+                    title = "Saving Datafile Failed";
+                    message = "Datafile size is zero!";
+                    break;
+            }
+            MainActivity.showOkDialog(getActivity(), title, message);
+            switch (mState) {
+
+                case STATE_PASSWORD_ONLY:
+                    showPasswordOnly();
+                    break;
+
+                case STATE_STEP_3b:
+                    showStep3b();
+                    break;
+
+                case STATE_STEP_3a:
+                    // go back to state 2a -- Get Password from user
+                    MySettings.setAppPasswordState(STATE_STEP_2a);
+                    mState = STATE_STEP_2a;
+                    updateUI();
+                    break;
+            }
+        }
     }
 
     @Override
@@ -248,37 +310,60 @@ public class AppPasswordFragment extends Fragment implements View.OnClickListene
                 }
                 txtAppPassword.setSelection(txtAppPassword.getText().length());
                 mShowPasswordText = !mShowPasswordText;
-
-                //Toast.makeText(getActivity(), "TO COME: btnDisplay", Toast.LENGTH_SHORT).show();
                 break;
 
             case R.id.btnOK:
-                String appPassword = txtAppPassword.getText().toString().trim();
+                switch (mState) {
 
-                if (dropboxFolderExists() && userSelected()) {
-
-                    if (appPasswordIsValid(appPassword)) {
-                        MySettings.setAppPassword(appPassword);
-                        if (passwordsDataFileExists()) {
-                            // read the passwords data file
-                            showProgressBar();
-                            MainActivity.openAndReadLabPasswordDataAsync();
+                    case STATE_PASSWORD_ONLY:
+                        if (dropboxFolderExists() && userSelected()) {
+                            String appPassword = txtAppPassword.getText().toString().trim();
+                            if (appPasswordIsValid(appPassword)) {
+                                MySettings.setAppPassword(appPassword);
+                                showProgressBar();
+                                EventBus.getDefault().post(new clsEvents.openAndReadLabPasswordDataAsync());
+                            }
                         } else {
-                            // no passwords data file exists ...
-                            // so show the items list fragment
-                            EventBus.getDefault().post(new clsEvents.replaceFragment(-1, MySettings.FRAG_ITEMS_LIST, false));
+                            MyLog.e("AppPasswordFragment", "onClick: from STATE_PASSWORD_ONLY (Get password from user). " +
+                                    "Either dropbox folder does not exits OR user not selected.");
                         }
-                    }
+                        break;
+
+                    case STATE_STEP_3a:
+                        if (dropboxFolderExists() && userSelected()) {
+                            // open passwords list items fragment
+                            MySettings.setAppPasswordState(STATE_PASSWORD_ONLY);
+                            mState = STATE_PASSWORD_ONLY;
+                            EventBus.getDefault().post(new clsEvents.replaceFragment(-1, MySettings.FRAG_ITEMS_LIST, false));
+                        } else {
+                            MyLog.e("AppPasswordFragment", "onClick: from STATE_STEP_3a (Select User). " +
+                                    "Either dropbox folder does not exits OR user not selected.");
+                        }
+                        break;
+
+                    case STATE_STEP_3b:
+                        if (dropboxFolderExists() && userSelected()) {
+                            String appPassword = txtAppPassword.getText().toString().trim();
+                            if (appPasswordIsValid(appPassword)) {
+                                MySettings.setAppPassword(appPassword);
+                                EventBus.getDefault().post(new clsEvents.openAndSaveLabPasswordDataAsync());
+                            }
+
+                        } else {
+                            MyLog.e("AppPasswordFragment", "onClick: from STATE_STEP_3b (Get Password from User). " +
+                                    "Either dropbox folder does not exits OR user not selected.");
+                        }
+                        break;
                 }
-
-
                 break;
 
             case R.id.btnOkReadPasswordFile:
-                showProgressBar();
-                // TODO: verify password before saving
-                MySettings.setAppPassword(txtAppPassword.getText().toString().trim());
-                MainActivity.openAndReadLabPasswordDataAsync();
+                String appPassword = txtAppPassword.getText().toString().trim();
+                if (appPasswordIsValid(appPassword)) {
+                    MySettings.setAppPassword(appPassword);
+                    showProgressBar();
+                    EventBus.getDefault().post(new clsEvents.openAndReadLabPasswordDataAsync());
+                }
                 break;
 
             case R.id.btnCreateNewUser:
@@ -287,6 +372,7 @@ public class AppPasswordFragment extends Fragment implements View.OnClickListene
                 newUserDialog.setTitle("Enter New User Name");
                 newUserDialog.setMessage("");
 
+                // TODO: Make EditText work like the App's other EditText boxes
                 // Set an EditText view to get user input
                 final EditText input = new EditText(getActivity());
                 input.setHint("New User Name");
@@ -304,7 +390,6 @@ public class AppPasswordFragment extends Fragment implements View.OnClickListene
                             MySettings.setActiveUserID(newUserID);
                             MySettings.setActiveUserName(newUserName);
                             MainActivity.addNewUser(mActiveUser);
-                            MySettings.setAppPasswordState(STATE_PASSWORD_ONLY);
                             updateUI();
                             dialog.dismiss();
                         } else {
@@ -327,6 +412,7 @@ public class AppPasswordFragment extends Fragment implements View.OnClickListene
                 break;
 
             case R.id.btnSelectUser:
+                // from Step 3a - Select user
                 if (MainActivity.getPasswordsData() != null) {
                     // Strings to Show In Dialog with Radio Buttons
                     final ArrayList<clsUsers> users = MainActivity.getPasswordsData().getUsers();
@@ -358,7 +444,7 @@ public class AppPasswordFragment extends Fragment implements View.OnClickListene
                             clsUsers selectedUser = users.get(item);
                             MySettings.setActiveUserID(selectedUser.getUserID());
                             MySettings.setActiveUserName(selectedUser.getUserName());
-                            MySettings.setAppPasswordState(STATE_PASSWORD_ONLY);
+                            // MySettings.setAppPasswordState(STATE_PASSWORD_ONLY);
                             updateUI();
                             dialog.dismiss();
                         }
@@ -488,6 +574,7 @@ public class AppPasswordFragment extends Fragment implements View.OnClickListene
         showStep3a_StartUpViews();
         showButtonText();
     }
+
     private void showStep2b() {
         // Select user
         showStep2b_StartUpViews();
@@ -499,8 +586,6 @@ public class AppPasswordFragment extends Fragment implements View.OnClickListene
         showStep3b_StartUpViews();
         showButtonText();
     }
-
-
 
 
     private void showPasswordOnly() {
@@ -521,6 +606,7 @@ public class AppPasswordFragment extends Fragment implements View.OnClickListene
     }
 
     private void showStep1_StartUpViews() {
+        // Select Dropbox folder
         progressBar.setVisibility(View.GONE);
 
         tvFirstTimeMessage.setVisibility(View.VISIBLE);
@@ -538,6 +624,7 @@ public class AppPasswordFragment extends Fragment implements View.OnClickListene
     }
 
     private void showStep2a_StartUpViews() {
+        // Get password from user
         progressBar.setVisibility(View.GONE);
 
         tvFirstTimeMessage.setVisibility(View.VISIBLE);
@@ -555,6 +642,7 @@ public class AppPasswordFragment extends Fragment implements View.OnClickListene
     }
 
     private void showStep3a_StartUpViews() {
+        // Select User
         progressBar.setVisibility(View.GONE);
 
         tvFirstTimeMessage.setVisibility(View.VISIBLE);
@@ -572,6 +660,7 @@ public class AppPasswordFragment extends Fragment implements View.OnClickListene
     }
 
     private void showStep2b_StartUpViews() {
+        // Create new user
         progressBar.setVisibility(View.GONE);
 
         tvFirstTimeMessage.setVisibility(View.VISIBLE);
@@ -589,6 +678,7 @@ public class AppPasswordFragment extends Fragment implements View.OnClickListene
     }
 
     private void showStep3b_StartUpViews() {
+        // Get password from user
         progressBar.setVisibility(View.GONE);
 
         tvFirstTimeMessage.setVisibility(View.VISIBLE);
@@ -630,6 +720,7 @@ public class AppPasswordFragment extends Fragment implements View.OnClickListene
                     dbxFs.awaitFirstSync();
                 }
             } catch (DbxException e) {
+                MyLog.e("waitForFirstSync", "doInBackground: DbxException");
                 e.printStackTrace();
             }
             return null;
