@@ -166,8 +166,11 @@ public class EditCreditCardFragment extends Fragment {
         MyLog.i("EditCreditCardFragment", "onCreate()");
         if (getArguments() != null) {
             mIsNewPasswordItem = getArguments().getBoolean(ARG_IS_NEW_PASSWORD_ITEM);
+            if (mIsNewPasswordItem) {
+                mIsDirty = true;
+            }
             mPasswordItem = MainActivity.getActivePasswordItem();
-            if(mPasswordItem!=null) {
+            if (mPasswordItem != null) {
                 mSelectedCreditCardTypePosition = findSpinnerPosition(mPasswordItem.getCreditCardAccountNumber());
             }
         }
@@ -555,6 +558,7 @@ public class EditCreditCardFragment extends Fragment {
         }
         spnCreditCardType.setSelection(mSelectedCreditCardTypePosition);
         getActivity().getActionBar().setDisplayHomeAsUpEnabled(true);
+        MySettings.setOnSaveInstanceState(false);
     }
 
 
@@ -566,6 +570,7 @@ public class EditCreditCardFragment extends Fragment {
         outState.putBoolean(ARG_IS_DIRTY, mIsDirty);
         outState.putInt(ARG_ACTIVE_CARD_TYPE, mActiveCardType);
         outState.putString(ARG_CREDIT_CARD_NUMBER, mCreditCardNumber);
+        MySettings.setOnSaveInstanceState(true);
     }
 
     @Override
@@ -583,29 +588,30 @@ public class EditCreditCardFragment extends Fragment {
     }
 
     private void updateUI() {
-        mPasswordItem = MainActivity.getActivePasswordItem();
-        if (mPasswordItem != null) {
-            txtItemName.setText(mPasswordItem.getName());
-            if (mOriginalItemName.isEmpty()) {
-                mOriginalItemName = mPasswordItem.getName();
+        if (!mIsDirty) {
+            mPasswordItem = MainActivity.getActivePasswordItem();
+            if (mPasswordItem != null) {
+                txtItemName.setText(mPasswordItem.getName());
+                if (mOriginalItemName.isEmpty()) {
+                    mOriginalItemName = mPasswordItem.getName();
+                }
+
+                updateCreditCardUI();
+
+                txtExpirationMonth.setText(mPasswordItem.getCreditCardExpirationMonth());
+                txtExpirationYear.setText(mPasswordItem.getCreditCardExpirationYear());
+                txtSecurityCode.setText(mPasswordItem.getCardCreditSecurityCode());
+
+                String formattedPrimaryPhoneNumber = clsFormattingMethods.formatPhoneNumber(mPasswordItem.getPrimaryPhoneNumber());
+                String formattedAlternatePhoneNumber = clsFormattingMethods.formatPhoneNumber(mPasswordItem.getAlternatePhoneNumber());
+                txtPrimaryPhoneNumber.setText(formattedPrimaryPhoneNumber);
+                txtAlternatePhoneNumber.setText(formattedAlternatePhoneNumber);
             }
-
-            updateCreditCardUI();
-
-            txtExpirationMonth.setText(mPasswordItem.getCreditCardExpirationMonth());
-            txtExpirationYear.setText(mPasswordItem.getCreditCardExpirationYear());
-            txtSecurityCode.setText(mPasswordItem.getCardCreditSecurityCode());
-
-            String formattedPrimaryPhoneNumber = clsFormattingMethods.formatPhoneNumber(mPasswordItem.getPrimaryPhoneNumber());
-            String formattedAlternatePhoneNumber = clsFormattingMethods.formatPhoneNumber(mPasswordItem.getAlternatePhoneNumber());
-            txtPrimaryPhoneNumber.setText(formattedPrimaryPhoneNumber);
-            txtAlternatePhoneNumber.setText(formattedAlternatePhoneNumber);
-            mIsDirty=false;
         }
     }
 
     private void updateCreditCardUI() {
-        if(mPasswordItem!=null) {
+        if (mPasswordItem != null) {
             CreditCardParts creditCardParts = new CreditCardParts(mPasswordItem.getCreditCardAccountNumber(), mSelectedCreditCardTypePosition);
             txtCreditCardPart1.setText(creditCardParts.getPart1());
             txtCreditCardPart2.setText(creditCardParts.getPart2());
@@ -628,6 +634,9 @@ public class EditCreditCardFragment extends Fragment {
         String unformattedAlternatePhoneNumber = clsFormattingMethods.unFormatPhoneNumber(txtAlternatePhoneNumber.getText().toString());
         mPasswordItem.setPrimaryPhoneNumber(unformattedPrimaryPhoneNumber);
         mPasswordItem.setAlternatePhoneNumber(unformattedAlternatePhoneNumber);
+
+        // save the changes
+        EventBus.getDefault().post(new clsEvents.saveChangesToDropbox());
         mIsDirty = false;
     }
 
@@ -716,7 +725,6 @@ public class EditCreditCardFragment extends Fragment {
         super.onPause();
         MyLog.i("EditCreditCardFragment", "onPause()");
         if (mIsDirty) {
-            EventBus.getDefault().post(new clsEvents.isDirty());
             updatePasswordItem();
         }
         getActivity().getActionBar().setDisplayHomeAsUpEnabled(false);

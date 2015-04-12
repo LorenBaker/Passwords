@@ -8,7 +8,7 @@ import java.util.ArrayList;
 public class clsLabPasswords {
 
     private ArrayList<clsUsers> Users = new ArrayList<>();
-    private ArrayList<clsItemTypes> ItemTypes = new ArrayList<>();
+    //private ArrayList<clsItemTypes> ItemTypes = new ArrayList<>();
     private ArrayList<clsPasswordItem> PasswordItems = new ArrayList<>();
 
     public ArrayList<clsUsers> getUsers() {
@@ -19,13 +19,13 @@ public class clsLabPasswords {
         this.Users = mUsers;
     }
 
-    public ArrayList<clsItemTypes> getItemTypes() {
+/*    public ArrayList<clsItemTypes> getItemTypes() {
         return ItemTypes;
     }
 
     public void setItemTypes(ArrayList<clsItemTypes> mItemTypes) {
         this.ItemTypes = mItemTypes;
-    }
+    }*/
 
     public ArrayList<clsPasswordItem> getPasswordItems() {
         return PasswordItems;

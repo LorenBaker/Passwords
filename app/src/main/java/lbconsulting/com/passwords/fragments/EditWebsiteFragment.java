@@ -66,6 +66,9 @@ public class EditWebsiteFragment extends Fragment implements TextWatcher {
         MyLog.i("EditWebsiteFragment", "onCreate()");
         if (getArguments() != null) {
             mIsNewPasswordItem = getArguments().getBoolean(ARG_IS_NEW_PASSWORD_ITEM);
+            if (mIsNewPasswordItem) {
+                mIsDirty = true;
+            }
             mPasswordItem = MainActivity.getActivePasswordItem();
         }
         setHasOptionsMenu(true);
@@ -151,6 +154,7 @@ public class EditWebsiteFragment extends Fragment implements TextWatcher {
             mPasswordItem = MainActivity.getActivePasswordItem();
         }
         getActivity().getActionBar().setDisplayHomeAsUpEnabled(true);
+        MySettings.setOnSaveInstanceState(false);
     }
 
 
@@ -159,6 +163,7 @@ public class EditWebsiteFragment extends Fragment implements TextWatcher {
         super.onSaveInstanceState(outState);
         MyLog.i("EditWebsiteFragment", "onSaveInstanceState()");
         outState.putBoolean(ARG_IS_DIRTY, mIsDirty);
+        MySettings.setOnSaveInstanceState(true);
     }
 
     @Override
@@ -176,26 +181,36 @@ public class EditWebsiteFragment extends Fragment implements TextWatcher {
     }
 
     private void updateUI() {
-        mPasswordItem = MainActivity.getActivePasswordItem();
-        if (mPasswordItem != null) {
-            txtItemName.setText(mPasswordItem.getName());
-            if (mOriginalItemName.isEmpty()) {
-                mOriginalItemName = mPasswordItem.getName();
-            }
+        if(!mIsDirty) {
+            mPasswordItem = MainActivity.getActivePasswordItem();
+            if (mPasswordItem != null) {
+                txtItemName.setText(mPasswordItem.getName());
+                if (mOriginalItemName.isEmpty()) {
+                    mOriginalItemName = mPasswordItem.getName();
+                }
 
-            txtWebsiteURL.setText((mPasswordItem.getWebsiteURL()));
-            txtUserID.setText((mPasswordItem.getWebsiteUserID()));
-            txtPassword.setText((mPasswordItem.getWebsitePassword()));
-            mIsDirty=false;
+                txtWebsiteURL.setText((mPasswordItem.getWebsiteURL()));
+                txtUserID.setText((mPasswordItem.getWebsiteUserID()));
+                txtPassword.setText((mPasswordItem.getWebsitePassword()));
+            }
         }
     }
 
     private void updatePasswordItem() {
 
         mPasswordItem.setName(txtItemName.getText().toString().trim());
-        mPasswordItem.setWebsiteURL(txtWebsiteURL.getText().toString().trim());
+
+        String websiteURL = txtWebsiteURL.getText().toString().trim();
+        if (!websiteURL.startsWith("http://") && !websiteURL.startsWith("https://")) {
+            websiteURL = "http://" + websiteURL;
+        }
+        mPasswordItem.setWebsiteURL(websiteURL);
+
         mPasswordItem.setWebsiteUserID(txtUserID.getText().toString().trim());
         mPasswordItem.setWebsitePassword(txtPassword.getText().toString().trim());
+
+        // save changes
+        EventBus.getDefault().post(new clsEvents.saveChangesToDropbox());
 
         mIsDirty = false;
 
@@ -259,7 +274,6 @@ public class EditWebsiteFragment extends Fragment implements TextWatcher {
         super.onPause();
         MyLog.i("EditWebsiteFragment", "onPause()");
         if (mIsDirty) {
-            EventBus.getDefault().post(new clsEvents.isDirty());
             updatePasswordItem();
         }
         getActivity().getActionBar().setDisplayHomeAsUpEnabled(false);

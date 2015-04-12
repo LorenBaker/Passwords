@@ -41,8 +41,8 @@ public class clsEvents {
         }
     }
 
-    public static class isDirty {
-        public isDirty() {
+    public static class saveChangesToDropbox {
+        public saveChangesToDropbox() {
         }
     }
 

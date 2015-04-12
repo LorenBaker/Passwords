@@ -86,8 +86,15 @@ public class DropboxListFragment extends Fragment
         MyLog.i("DropboxListFragment", "onActivityCreated()");
         getActivity().getActionBar().setDisplayHomeAsUpEnabled(true);
         dbxFs = MainActivity.getDbxFs();
+        MySettings.setOnSaveInstanceState(false);
     }
 
+    @Override
+    public void onSaveInstanceState(Bundle outState) {
+        super.onSaveInstanceState(outState);
+        MyLog.i("DropboxListFragment", "onSaveInstanceState");
+        MySettings.setOnSaveInstanceState(true);
+    }
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,

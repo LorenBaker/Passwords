@@ -122,8 +122,15 @@ public class AppPasswordFragment extends Fragment implements View.OnClickListene
     public void onActivityCreated(@Nullable Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
         MyLog.i("AppPasswordFragment", "onActivityCreated()");
+        MySettings.setOnSaveInstanceState(false);
     }
 
+    @Override
+    public void onSaveInstanceState(Bundle outState) {
+        super.onSaveInstanceState(outState);
+        MyLog.i("AppPasswordFragment", "onSaveInstanceState");
+        MySettings.setOnSaveInstanceState(true);
+    }
 
     @Override
     public void onResume() {

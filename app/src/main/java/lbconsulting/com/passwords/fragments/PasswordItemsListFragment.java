@@ -99,8 +99,15 @@ public class PasswordItemsListFragment extends Fragment
         super.onActivityCreated(savedInstanceState);
         MyLog.i("PasswordItemsListFragment", "onActivityCreated()");
         mSearchText = MySettings.getSearchText();
+        MySettings.setOnSaveInstanceState(false);
     }
 
+    @Override
+    public void onSaveInstanceState(Bundle outState) {
+        super.onSaveInstanceState(outState);
+        MyLog.i("PasswordItemsListFragment", "onSaveInstanceState");
+        MySettings.setOnSaveInstanceState(true);
+    }
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
@@ -191,11 +198,11 @@ public class PasswordItemsListFragment extends Fragment
         mUserSoftwareItems = new ArrayList<>();
         mUserWebsiteItems = new ArrayList<>();
 
-        int lastPasswordItemID = -1;
+        //int lastPasswordItemID = -1;
         for (clsPasswordItem item : mAllItems) {
-            if (item.getID() > lastPasswordItemID) {
+/*            if (item.getID() > lastPasswordItemID) {
                 lastPasswordItemID = item.getID();
-            }
+            }*/
             if (item.getUser_ID() == MySettings.getActiveUserID()) {
                 mAllUserItems.add(item);
                 switch (item.getItemType_ID()) {
@@ -217,7 +224,7 @@ public class PasswordItemsListFragment extends Fragment
                 }
             }
         }
-        MainActivity.setLastPasswordItemID(lastPasswordItemID);
+       // MainActivity.setLastPasswordItemID(lastPasswordItemID);
     }
 
     private void setArrayAdapters() {

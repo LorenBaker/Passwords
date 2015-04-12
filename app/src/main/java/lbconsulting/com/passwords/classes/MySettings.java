@@ -27,6 +27,7 @@ public class MySettings {
     private static final String SETTING_ACTIVE_USER_ID = "arg_active_user_id";
     private static final String SETTING_APP_PASSWORD = "appPasswordKey";
     private static final String SETTING_APP_PASSWORD_SAVED_TIME = "appPasswordSavedTime";
+    private static final String SETTING_ON_SAVE_INSTANCE_STATE = "onSaveInstanceState";
 
     private static final String SETTING_ACTIVE_FRAGMENT_ID = "activeFragmentID";
     private static final String SETTING_ACTIVE_ITEM_ID = "activeItemID";
@@ -85,7 +86,7 @@ public class MySettings {
                 mContext.getSharedPreferences(PASSWORDS_SAVED_STATES, 0);
         SharedPreferences.Editor editor = passwordsSavedState.edit();
         editor.putInt(SETTING_ACTIVE_USER_ID, userID);
-        editor.commit();
+        editor.apply();
     }
 
     public static clsUsers getActiveUser() {
@@ -113,7 +114,7 @@ public class MySettings {
         }
         if (result != null) {
             result.setUserName(newName);
-            EventBus.getDefault().post(new clsEvents.isDirty());
+            EventBus.getDefault().post(new clsEvents.saveChangesToDropbox());
         }
     }
 
@@ -128,7 +129,7 @@ public class MySettings {
                 mContext.getSharedPreferences(PASSWORDS_SAVED_STATES, 0);
         SharedPreferences.Editor editor = passwordsSavedState.edit();
         editor.putString(SETTING_DROPBOX_FOLDER_NAME, dropboxFolderName);
-        editor.commit();
+        editor.apply();
     }
 
     public static String getDropboxFilename() {
@@ -146,7 +147,7 @@ public class MySettings {
                 mContext.getSharedPreferences(PASSWORDS_SAVED_STATES, 0);
         SharedPreferences.Editor editor = passwordsSavedState.edit();
         editor.putInt(SETTING_ACTIVE_FRAGMENT_ID, activeFragmentID);
-        editor.commit();
+        editor.apply();
     }
 
     public static long getPasswordLongevity() {
@@ -160,7 +161,7 @@ public class MySettings {
                 mContext.getSharedPreferences(PASSWORDS_SAVED_STATES, 0);
         SharedPreferences.Editor editor = passwordsSavedState.edit();
         editor.putLong(SETTING_PASSWORD_LONGEVITY, passwordLongevity);
-        editor.commit();
+        editor.apply();
     }
 
     public static String getAppPassword() {
@@ -193,7 +194,7 @@ public class MySettings {
                 mContext.getSharedPreferences(PASSWORDS_SAVED_STATES, 0);
         SharedPreferences.Editor editor = passwordsSavedState.edit();
         editor.putString(SETTING_APP_PASSWORD, appPassword);
-        editor.commit();
+        editor.apply();
     }
 
     public static long getPasswordSavedTime() {
@@ -208,7 +209,21 @@ public class MySettings {
                 mContext.getSharedPreferences(PASSWORDS_SAVED_STATES, 0);
         SharedPreferences.Editor editor = passwordsSavedState.edit();
         editor.putLong(SETTING_APP_PASSWORD_SAVED_TIME, currentTime);
-        editor.commit();
+        editor.apply();
+    }
+
+    public static boolean getOnSaveInstanceState(){
+        SharedPreferences passwordsSavedState =
+                mContext.getSharedPreferences(PASSWORDS_SAVED_STATES, 0);
+        return passwordsSavedState.getBoolean(SETTING_ON_SAVE_INSTANCE_STATE, false);
+    }
+
+    public static void setOnSaveInstanceState(boolean onSaveInstanceState){
+        SharedPreferences passwordsSavedState =
+                mContext.getSharedPreferences(PASSWORDS_SAVED_STATES, 0);
+        SharedPreferences.Editor editor = passwordsSavedState.edit();
+        editor.putBoolean(SETTING_ON_SAVE_INSTANCE_STATE, onSaveInstanceState);
+        editor.apply();
     }
 
     public static void resetAppPassword() {
@@ -226,7 +241,7 @@ public class MySettings {
                 mContext.getSharedPreferences(PASSWORDS_SAVED_STATES, 0);
         SharedPreferences.Editor editor = passwordsSavedState.edit();
         editor.putInt(SETTING_ACTIVE_ITEM_ID, activePasswordItemID);
-        editor.commit();
+        editor.apply();
     }
 
 
@@ -241,7 +256,7 @@ public class MySettings {
                 mContext.getSharedPreferences(PASSWORDS_SAVED_STATES, 0);
         SharedPreferences.Editor editor = passwordsSavedState.edit();
         editor.putInt(STATE_APP_PASSWORD_FRAGMENT, appPasswordState);
-        editor.commit();
+        editor.apply();
     }
 
 
@@ -256,7 +271,7 @@ public class MySettings {
                 mContext.getSharedPreferences(PASSWORDS_SAVED_STATES, 0);
         SharedPreferences.Editor editor = passwordsSavedState.edit();
         editor.putInt(SETTING_ACTIVE_LIST_VIEW_ID, activeListViewID);
-        editor.commit();
+        editor.apply();
     }
 
     public static String getSearchText() {
@@ -270,7 +285,7 @@ public class MySettings {
                 mContext.getSharedPreferences(PASSWORDS_SAVED_STATES, 0);
         SharedPreferences.Editor editor = passwordsSavedState.edit();
         editor.putString(SETTING_SEARCH_TEXT, searchText);
-        editor.commit();
+        editor.apply();
     }
 
     public static class Credentials {

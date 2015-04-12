@@ -88,6 +88,14 @@ public class SettingsFragment extends Fragment implements View.OnClickListener {
         super.onActivityCreated(savedInstanceState);
         MyLog.i("SettingsFragment", "onActivityCreated()");
         getActivity().getActionBar().setDisplayHomeAsUpEnabled(true);
+        MySettings.setOnSaveInstanceState(false);
+    }
+
+    @Override
+    public void onSaveInstanceState(Bundle outState) {
+        super.onSaveInstanceState(outState);
+        MyLog.i("SettingsFragment", "onSaveInstanceState");
+        MySettings.setOnSaveInstanceState(true);
     }
 
     @Override
@@ -196,7 +204,9 @@ public class SettingsFragment extends Fragment implements View.OnClickListener {
                     ArrayList<String> userNames = new ArrayList<>();
                     if (users != null) {
                         for (clsUsers user : users) {
-                            userNames.add(user.getUserName());
+                            if (user.getUserID() > 0) {
+                                userNames.add(user.getUserName());
+                            }
                         }
                     }
                     CharSequence[] names = userNames.toArray(new CharSequence[userNames.size()]);
@@ -415,7 +425,7 @@ public class SettingsFragment extends Fragment implements View.OnClickListener {
     private void selectActiveUser() {
         MySettings.setActiveUserID(mActiveUser.getUserID());
         updateUI();
-        EventBus.getDefault().post(new clsEvents.isDirty());
+        EventBus.getDefault().post(new clsEvents.saveChangesToDropbox());
         EventBus.getDefault().post(new clsEvents.replaceFragment(-1, MySettings.FRAG_ITEMS_LIST, false));
     }
 }

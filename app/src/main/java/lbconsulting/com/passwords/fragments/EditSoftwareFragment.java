@@ -72,6 +72,9 @@ public class EditSoftwareFragment extends Fragment {
         MyLog.i("EditSoftwareFragment", "onCreate()");
         if (getArguments() != null) {
             mIsNewPasswordItem = getArguments().getBoolean(ARG_IS_NEW_PASSWORD_ITEM);
+            if (mIsNewPasswordItem) {
+                mIsDirty = true;
+            }
             mPasswordItem = MainActivity.getActivePasswordItem();
         }
         setHasOptionsMenu(true);
@@ -207,6 +210,7 @@ public class EditSoftwareFragment extends Fragment {
             mPasswordItem = MainActivity.getActivePasswordItem();
         }
         getActivity().getActionBar().setDisplayHomeAsUpEnabled(true);
+        MySettings.setOnSaveInstanceState(false);
     }
 
 
@@ -217,6 +221,7 @@ public class EditSoftwareFragment extends Fragment {
 
         outState.putBoolean(ARG_IS_DIRTY, mIsDirty);
         outState.putString(ARG_ACCOUNT_NUMBER, mAccountNumber);
+        MySettings.setOnSaveInstanceState(true);
     }
 
     @Override
@@ -234,23 +239,25 @@ public class EditSoftwareFragment extends Fragment {
     }
 
     private void updateUI() {
-        mPasswordItem = MainActivity.getActivePasswordItem();
-        if (mPasswordItem != null) {
-            txtItemName.setText(mPasswordItem.getName());
-            if (mOriginalItemName.isEmpty()) {
-                mOriginalItemName = mPasswordItem.getName();
-            }
+        if(!mIsDirty) {
+            mPasswordItem = MainActivity.getActivePasswordItem();
+            if (mPasswordItem != null) {
+                txtItemName.setText(mPasswordItem.getName());
+                if (mOriginalItemName.isEmpty()) {
+                    mOriginalItemName = mPasswordItem.getName();
+                }
 
-            mSubgroupLength = mPasswordItem.getSoftwareSubgroupLength();
-            int position = mSubgroupLength - mFirstSubgroupLength;
-            if (position < 0) {
-                position = 0;
-            }
+                mSubgroupLength = mPasswordItem.getSoftwareSubgroupLength();
+                int position = mSubgroupLength - mFirstSubgroupLength;
+                if (position < 0) {
+                    position = 0;
+                }
 
-            String formattedKeyCode = clsFormattingMethods.formatTypicalAccountNumber(mPasswordItem.getSoftwareKeyCode(), mSubgroupLength);
-            txtKeyCode.setText(formattedKeyCode);
-            spnSpacing.setSelection(position);
-            mIsDirty = false;
+                String formattedKeyCode = clsFormattingMethods.formatTypicalAccountNumber(mPasswordItem.getSoftwareKeyCode(), mSubgroupLength);
+                txtKeyCode.setText(formattedKeyCode);
+                spnSpacing.setSelection(position);
+                mIsDirty = false;
+            }
         }
     }
 
@@ -262,6 +269,8 @@ public class EditSoftwareFragment extends Fragment {
         mPasswordItem.setSoftwareSubgroupLength(mSubgroupLength);
         mIsDirty = false;
 
+        // save changes
+        EventBus.getDefault().post(new clsEvents.saveChangesToDropbox());
     }
 
     @Override
@@ -320,7 +329,6 @@ public class EditSoftwareFragment extends Fragment {
         super.onPause();
         MyLog.i("EditSoftwareFragment", "onPause()");
         if (mIsDirty) {
-            EventBus.getDefault().post(new clsEvents.isDirty());
             updatePasswordItem();
         }
         getActivity().getActionBar().setDisplayHomeAsUpEnabled(false);

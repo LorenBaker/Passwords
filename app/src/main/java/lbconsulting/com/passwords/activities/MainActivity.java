@@ -26,6 +26,7 @@ import com.dropbox.sync.android.DbxFileStatus;
 import com.dropbox.sync.android.DbxFileSystem;
 import com.dropbox.sync.android.DbxPath;
 import com.google.gson.Gson;
+import com.google.gson.JsonSyntaxException;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
@@ -64,6 +65,7 @@ import lbconsulting.com.passwords.fragments.SettingsFragment;
 public class MainActivity extends FragmentActivity {
     // TODO: Look at menu item order
     // TODO: Make Passwords App Icons
+    // TODO: What happens if remote user deletes a passwords item that is currently being edited?
 
 
     private static final int REQUEST_LINK_TO_DBX = 999;  // This value is up to you
@@ -76,7 +78,7 @@ public class MainActivity extends FragmentActivity {
     private static int mPreviousPasswordItemID;
     private boolean mArgBoolean;
 
-    private static int mLastPasswordItemID;
+    private static int mLastPasswordItemID = 0;
 
     private static DbxFile.Listener mJsonDataFileListener;
     private static DbxFile mJsonDataFile = null;
@@ -95,14 +97,6 @@ public class MainActivity extends FragmentActivity {
 
     public static boolean isPasswordDataFileOpen() {
         return mJsonDataFile != null;
-    }
-
-    public static int getLastPasswordItemID() {
-        return mLastPasswordItemID;
-    }
-
-    public static void setLastPasswordItemID(int lastPasswordItemID) {
-        mLastPasswordItemID = lastPasswordItemID;
     }
 
     private static int mLastUserID = 0;
@@ -170,8 +164,8 @@ public class MainActivity extends FragmentActivity {
         for (clsPasswordItem item : mPasswordsData.getPasswordItems()) {
             if (item.getID() == itemID) {
                 mPasswordsData.getPasswordItems().remove(index);
-                //mActivePasswordItemID = mPreviousPasswordItemID;
                 MySettings.setActivePasswordItemID(mPreviousPasswordItemID);
+                EventBus.getDefault().post(new clsEvents.saveChangesToDropbox());
                 result = true;
                 break;
             }
@@ -185,6 +179,8 @@ public class MainActivity extends FragmentActivity {
         clsPasswordItem newItem = new clsPasswordItem(getNextPasswordItemID(), MySettings.getActiveUserID());
         mPasswordsData.getPasswordItems().add(newItem);
         MySettings.setActivePasswordItemID(newItem.getID());
+        // save the new item
+        EventBus.getDefault().post(new clsEvents.saveChangesToDropbox());
         return newItem;
     }
 
@@ -304,61 +300,86 @@ public class MainActivity extends FragmentActivity {
                             .replace(R.id.fragment_container,
                                     PasswordItemsListFragment.newInstance(), "FRAG_ITEMS_LIST")
                             .commit();
+                    MyLog.i("MainActivity", "showFragments: FRAG_ITEMS_LIST");
                     break;
 
                 case MySettings.FRAG_ITEM_DETAIL:
-                    mArgBoolean = false;
-                    fm.beginTransaction()
-                            .setTransition(FragmentTransaction.TRANSIT_FRAGMENT_FADE)
-                            .replace(R.id.fragment_container,
-                                    PasswordItemDetailFragment.newInstance(), "FRAG_ITEM_DETAIL")
-                            .addToBackStack("FRAG_ITEM_DETAIL")
-                            .commit();
+                    // don't replace fragment if restarting from onSaveInstanceState
+                    if (!MySettings.getOnSaveInstanceState()) {
+                        mArgBoolean = false;
+                        fm.beginTransaction()
+                                .setTransition(FragmentTransaction.TRANSIT_FRAGMENT_FADE)
+                                .replace(R.id.fragment_container,
+                                        PasswordItemDetailFragment.newInstance(), "FRAG_ITEM_DETAIL")
+                                .addToBackStack("FRAG_ITEM_DETAIL")
+                                .commit();
+                        MyLog.i("MainActivity", "showFragments: FRAG_ITEM_DETAIL");
+                    }
                     break;
 
                 case MySettings.FRAG_EDIT_CREDIT_CARD:
-                    fm.beginTransaction()
-                            .setTransition(FragmentTransaction.TRANSIT_FRAGMENT_FADE)
-                            .replace(R.id.fragment_container,
-                                    EditCreditCardFragment.newInstance(mArgBoolean), "FRAG_EDIT_CREDIT_CARD")
-                            .addToBackStack("FRAG_EDIT_CREDIT_CARD")
-                            .commit();
+                    // don't replace fragment if restarting from onSaveInstanceState
+                    if (!MySettings.getOnSaveInstanceState()) {
+                        fm.beginTransaction()
+                                .setTransition(FragmentTransaction.TRANSIT_FRAGMENT_FADE)
+                                .replace(R.id.fragment_container,
+                                        EditCreditCardFragment.newInstance(mArgBoolean), "FRAG_EDIT_CREDIT_CARD")
+                                .addToBackStack("FRAG_EDIT_CREDIT_CARD")
+                                .commit();
+                        MyLog.i("MainActivity", "showFragments: FRAG_EDIT_CREDIT_CARD");
+                    }
                     break;
 
                 case MySettings.FRAG_EDIT_GENERAL_ACCOUNT:
-                    fm.beginTransaction()
-                            .setTransition(FragmentTransaction.TRANSIT_FRAGMENT_FADE)
-                            .replace(R.id.fragment_container,
-                                    EditGeneralAccountFragment.newInstance(mArgBoolean), "FRAG_EDIT_GENERAL_ACCOUNT")
-                            .addToBackStack("FRAG_EDIT_GENERAL_ACCOUNT")
-                            .commit();
+                    // don't replace fragment if restarting from onSaveInstanceState
+                    if (!MySettings.getOnSaveInstanceState()) {
+                        fm.beginTransaction()
+                                .setTransition(FragmentTransaction.TRANSIT_FRAGMENT_FADE)
+                                .replace(R.id.fragment_container,
+                                        EditGeneralAccountFragment.newInstance(mArgBoolean), "FRAG_EDIT_GENERAL_ACCOUNT")
+                                .addToBackStack("FRAG_EDIT_GENERAL_ACCOUNT")
+                                .commit();
+                        MyLog.i("MainActivity", "showFragments: FRAG_EDIT_GENERAL_ACCOUNT");
+                    }
                     break;
 
                 case MySettings.FRAG_EDIT_SOFTWARE:
-                    fm.beginTransaction()
-                            .setTransition(FragmentTransaction.TRANSIT_FRAGMENT_FADE)
-                            .replace(R.id.fragment_container,
-                                    EditSoftwareFragment.newInstance(mArgBoolean), "FRAG_EDIT_SOFTWARE")
-                            .addToBackStack("FRAG_EDIT_SOFTWARE")
-                            .commit();
+                    // don't replace fragment if restarting from onSaveInstanceState
+                    if (!MySettings.getOnSaveInstanceState()) {
+                        fm.beginTransaction()
+                                .setTransition(FragmentTransaction.TRANSIT_FRAGMENT_FADE)
+                                .replace(R.id.fragment_container,
+                                        EditSoftwareFragment.newInstance(mArgBoolean), "FRAG_EDIT_SOFTWARE")
+                                .addToBackStack("FRAG_EDIT_SOFTWARE")
+                                .commit();
+                        MyLog.i("MainActivity", "showFragments: FRAG_EDIT_SOFTWARE");
+                    }
                     break;
 
                 case MySettings.FRAG_EDIT_WEBSITE:
-                    fm.beginTransaction()
-                            .setTransition(FragmentTransaction.TRANSIT_FRAGMENT_FADE)
-                            .replace(R.id.fragment_container,
-                                    EditWebsiteFragment.newInstance(mArgBoolean), "FRAG_EDIT_WEBSITE")
-                            .addToBackStack("FRAG_EDIT_WEBSITE")
-                            .commit();
+                    // don't replace fragment if restarting from onSaveInstanceState
+                    if (!MySettings.getOnSaveInstanceState()) {
+                        fm.beginTransaction()
+                                .setTransition(FragmentTransaction.TRANSIT_FRAGMENT_FADE)
+                                .replace(R.id.fragment_container,
+                                        EditWebsiteFragment.newInstance(mArgBoolean), "FRAG_EDIT_WEBSITE")
+                                .addToBackStack("FRAG_EDIT_WEBSITE")
+                                .commit();
+                        MyLog.i("MainActivity", "showFragments: FRAG_EDIT_WEBSITE");
+                    }
                     break;
 
                 case MySettings.FRAG_SETTINGS:
-                    fm.beginTransaction()
-                            .setTransition(FragmentTransaction.TRANSIT_FRAGMENT_FADE)
-                            .replace(R.id.fragment_container,
-                                    SettingsFragment.newInstance(), "FRAG_SETTINGS")
-                            .addToBackStack("FRAG_SETTINGS")
-                            .commit();
+                    // don't replace fragment if restarting from onSaveInstanceState
+                    if (!MySettings.getOnSaveInstanceState()) {
+                        fm.beginTransaction()
+                                .setTransition(FragmentTransaction.TRANSIT_FRAGMENT_FADE)
+                                .replace(R.id.fragment_container,
+                                        SettingsFragment.newInstance(), "FRAG_SETTINGS")
+                                .addToBackStack("FRAG_SETTINGS")
+                                .commit();
+                        MyLog.i("MainActivity", "showFragments: FRAG_SETTINGS");
+                    }
                     break;
 
                 case MySettings.FRAG_APP_PASSWORD:
@@ -366,18 +387,23 @@ public class MainActivity extends FragmentActivity {
                     fm.beginTransaction()
                             .setTransition(FragmentTransaction.TRANSIT_FRAGMENT_FADE)
                             .replace(R.id.fragment_container,
-                                    AppPasswordFragment.newInstance(mArgBoolean), "FRAG_SETTINGS")
-                            .addToBackStack("FRAG_SETTINGS")
+                                    AppPasswordFragment.newInstance(mArgBoolean), "FRAG_APP_PASSWORD")
+                            .addToBackStack("FRAG_APP_PASSWORD")
                             .commit();
+                    MyLog.i("MainActivity", "showFragments: FRAG_APP_PASSWORD");
                     break;
 
                 case MySettings.FRAG_DROPBOX_LIST:
-                    fm.beginTransaction()
-                            .setTransition(FragmentTransaction.TRANSIT_FRAGMENT_FADE)
-                            .replace(R.id.fragment_container,
-                                    DropboxListFragment.newInstance(), "FRAG_DROPBOX_LIST")
-                            .addToBackStack("FRAG_DROPBOX_LIST")
-                            .commit();
+                    // don't replace fragment if restarting from onSaveInstanceState
+                    if (!MySettings.getOnSaveInstanceState()) {
+                        fm.beginTransaction()
+                                .setTransition(FragmentTransaction.TRANSIT_FRAGMENT_FADE)
+                                .replace(R.id.fragment_container,
+                                        DropboxListFragment.newInstance(), "FRAG_DROPBOX_LIST")
+                                .addToBackStack("FRAG_DROPBOX_LIST")
+                                .commit();
+                        MyLog.i("MainActivity", "showFragments: FRAG_DROPBOX_LIST");
+                    }
                     break;
 
             }
@@ -425,7 +451,7 @@ public class MainActivity extends FragmentActivity {
         showOkDialog(this, event.getTitle(), event.getMessage());
     }
 
-    public void onEvent(clsEvents.isDirty event) {
+    public void onEvent(clsEvents.saveChangesToDropbox event) {
         // save file but don't show result dialog
         new writeLabPasswordData(this).execute(false);
     }
@@ -498,6 +524,11 @@ public class MainActivity extends FragmentActivity {
     protected void onDestroy() {
         MyLog.i("MainActivity", "onDestroy()");
         super.onDestroy();
+        if (mJsonDataFile != null) {
+            // close the json data file
+            mJsonDataFile.close();
+        }
+        //MySettings.setOnSaveInstanceState(false);
         EventBus.getDefault().unregister(this);
     }
 
@@ -505,18 +536,19 @@ public class MainActivity extends FragmentActivity {
     protected void onPause() {
         MyLog.i("MainActivity", "onPause()");
 
-/*        if (mIsDirty) {
-            saveEncryptedData(false);
-        }*/
-
         if (mJsonDataFile != null) {
             // stop listening for json data file changes
             stopListeningForChanges();
-            // close the json data file
-            mJsonDataFile.close();
         }
         super.onPause();
     }
+
+    @Override
+    protected void onSaveInstanceState(Bundle outState) {
+        super.onSaveInstanceState(outState);
+        MyLog.i("MainActivity", "onSaveInstanceState()");
+    }
+
 
     @Override
     protected void onResume() {
@@ -636,11 +668,13 @@ public class MainActivity extends FragmentActivity {
         setUserNameInActionBar();
     }
 
-    public static void setUserNameInActionBar(){
-        clsUsers activeUser = mPasswordsData.getUser(MySettings.getActiveUserID());
-        if (activeUser != null) {
-            // TODO: Implement plurals
-            setActionBarTitle(activeUser.getUserName() + "'s Passwords");
+    public static void setUserNameInActionBar() {
+        if (mPasswordsData != null) {
+            clsUsers activeUser = mPasswordsData.getUser(MySettings.getActiveUserID());
+            if (activeUser != null) {
+                // TODO: Implement plurals
+                setActionBarTitle(activeUser.getUserName() + "'s Passwords");
+            }
         }
     }
 
@@ -698,17 +732,23 @@ public class MainActivity extends FragmentActivity {
                 e.printStackTrace();
             }
             if (!decryptedContents.isEmpty()) {
+                decryptedContents = decryptedContents.trim();
+                MyLog.i("MainActivity", "readData: trimmed decryptedContents length = " + decryptedContents.length());
                 Gson gson = new Gson();
-                mPasswordsData = gson.fromJson(decryptedContents, clsLabPasswords.class);
+                try {
+                    mPasswordsData = gson.fromJson(decryptedContents, clsLabPasswords.class);
+                } catch (JsonSyntaxException e) {
+                    MyLog.e("MainActivity", "readData(): JsonSyntaxException: " + e.getMessage());
+                    e.printStackTrace();
+                }
                 if (mPasswordsData != null) {
                     sortPasswordsData();
                     int numberOfItems = mPasswordsData.getPasswordItems().size();
                     int numberOfUsers = mPasswordsData.getUsers().size();
-                    int numberOfItemTypes = mPasswordsData.getItemTypes().size();
+                    //int numberOfItemTypes = mPasswordsData.getItemTypes().size();
                     MyLog.d("MainActivity", "readData COMPLETE. "
                             + numberOfItems + " PasswordItems; "
-                            + numberOfUsers + " Users; and "
-                            + numberOfItemTypes + " ItemTypes");
+                            + numberOfUsers + " Users");
 
                     int lastUserID = -1;
                     for (clsUsers user : mPasswordsData.getUsers()) {
@@ -717,6 +757,15 @@ public class MainActivity extends FragmentActivity {
                         }
                     }
                     setLastUserID(lastUserID);
+
+                    int lastPasswordItemID = 0;
+                    for (clsPasswordItem item : mPasswordsData.getPasswordItems()) {
+                        if (item.getID() > lastPasswordItemID) {
+                            lastPasswordItemID = item.getID();
+                        }
+                    }
+
+                    mLastPasswordItemID = lastPasswordItemID;
                     result = DOWNLOAD_RESULT_SUCCESS;
 
                 } else {
@@ -771,49 +820,44 @@ public class MainActivity extends FragmentActivity {
         }
 
         // Save encrypted JSON file string to Dropbox
-        try {
-            if (!encryptedJsonFileString.isEmpty()) {
+
+        if (!encryptedJsonFileString.isEmpty()) {
                 /*String filePathString = MySettings.getDropboxFolderName();
                 DbxPath filePath = new DbxPath(filePathString);
                 filePath = new DbxPath(filePath, "encryptedTest.txt");*/
 
-                String filePathString = MySettings.getDropboxFilename();
-                DbxPath filePath = new DbxPath(filePathString);
+            String filePathString = MySettings.getDropboxFilename();
+            DbxPath filePath = new DbxPath(filePathString);
 
-                if (mJsonDataFile != null) {
-                    // you're going to change the json data file ...
-                    // so temporarily stop listening for changes.
-                    stopListeningForChanges();
 
+            if (mJsonDataFile != null) {
+                // you're going to change the json data file ...
+                // so temporarily stop listening for changes.
+                stopListeningForChanges();
+                try {
                     // write the file
                     mJsonDataFile.writeString(encryptedJsonFileString);
                     DbxFileInfo fileInfo = dbxFs.getFileInfo(filePath);
                     fileSize = fileInfo.size;
                     MyLog.i("MainActivity", "saveEncryptedData: encrypted file SAVED. File size = " + fileSize);
-                    try {
-                        DbxFileStatus status = mJsonDataFile.getSyncStatus();
-                        if (!status.isLatest) {
-                            // There must have been a change while writing the file
-                            // so read the latest file
-                            // TODO: verify that reading data works
-                            MyLog.d("MainActivity", "saveEncryptedData: Changes were made " +
-                                    "to the data file while writing file. Start readData()");
-                            readData();
-                        }
-                    } catch (DbxException e) {
-                        e.printStackTrace();
-                    }
-                    // resume listening for changes
-                    startListeningForChanges();
 
+                    DbxFileStatus status = mJsonDataFile.getSyncStatus();
+                    if (!status.isLatest) {
+                        // There must have been a change while writing the file
+                        // so read the latest file
+                        // TODO: verify that reading data works
+                        MyLog.d("MainActivity", "saveEncryptedData: Changes were made " +
+                                "to the data file while writing file. Start readData()");
+                        readData();
+                    }
+                } catch (DbxException e) {
+                    MyLog.e("MainActivity", "saveEncryptedData; DbxException");
+                } catch (Exception e) {
+                    MyLog.e("MainActivity", "saveEncryptedData; Exception");
                 }
+                // resume listening for changes
+                startListeningForChanges();
             }
-        } catch (DbxException e) {
-            MyLog.e("MainActivity", "saveEncryptedData: DbxException");
-            e.printStackTrace();
-        } catch (IOException e) {
-            MyLog.e("MainActivity", "saveEncryptedData: IOException");
-            e.printStackTrace();
         }
 
         return fileSize;
@@ -833,9 +877,9 @@ public class MainActivity extends FragmentActivity {
 
     public static void sortPasswordsData() {
         if (mPasswordsData != null) {
-            if (mPasswordsData.getItemTypes() != null) {
+/*            if (mPasswordsData.getItemTypes() != null) {
                 Collections.sort(mPasswordsData.getItemTypes(), new sortItemTypes());
-            }
+            }*/
 
             if (mPasswordsData.getPasswordItems() != null) {
                 Collections.sort(mPasswordsData.getPasswordItems(), new sortPasswordItems());

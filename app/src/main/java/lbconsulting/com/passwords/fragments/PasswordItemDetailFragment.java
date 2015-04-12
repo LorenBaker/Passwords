@@ -1,5 +1,10 @@
 package lbconsulting.com.passwords.fragments;
 
+import android.content.ClipData;
+import android.content.ClipboardManager;
+import android.content.Context;
+import android.content.Intent;
+import android.net.Uri;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
@@ -46,6 +51,8 @@ public class PasswordItemDetailFragment extends Fragment implements View.OnClick
     private TextView tvPasswordItemName;
     private TextView tvWebsiteDetail;
 
+    private TextWatcher mCommentsTextWatcher;
+
 
     public static PasswordItemDetailFragment newInstance() {
         PasswordItemDetailFragment fragment = new PasswordItemDetailFragment();
@@ -72,57 +79,68 @@ public class PasswordItemDetailFragment extends Fragment implements View.OnClick
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
-        MyLog.i("PasswordItemDetailFragment", "onCreateView()");
-        View rootView = inflater.inflate(R.layout.frag_password_item_detail, container, false);
+            MyLog.i("PasswordItemDetailFragment", "onCreateView()");
+            View rootView = inflater.inflate(R.layout.frag_password_item_detail, container, false);
 
-        btnCallAlternate = (Button) rootView.findViewById(R.id.btnCallAlternate);
-        btnCallPrimary = (Button) rootView.findViewById(R.id.btnCallPrimary);
-        btnCopyAccountNumber = (Button) rootView.findViewById(R.id.btnCopyAccountNumber);
-        btnCopyPassword = (Button) rootView.findViewById(R.id.btnCopyPassword);
-        btnGoToWebsite = (Button) rootView.findViewById(R.id.btnGoToWebsite);
-        btnEditItem = (ImageButton) rootView.findViewById(R.id.btnEditItem);
-        btnEditWebsite = (ImageButton) rootView.findViewById(R.id.btnEditWebsite);
+            btnCallAlternate = (Button) rootView.findViewById(R.id.btnCallAlternate);
+            btnCallPrimary = (Button) rootView.findViewById(R.id.btnCallPrimary);
+            btnCopyAccountNumber = (Button) rootView.findViewById(R.id.btnCopyAccountNumber);
+            btnCopyPassword = (Button) rootView.findViewById(R.id.btnCopyPassword);
+            btnGoToWebsite = (Button) rootView.findViewById(R.id.btnGoToWebsite);
+            btnEditItem = (ImageButton) rootView.findViewById(R.id.btnEditItem);
+            btnEditWebsite = (ImageButton) rootView.findViewById(R.id.btnEditWebsite);
 
-        btnCallAlternate.setOnClickListener(this);
-        btnCallPrimary.setOnClickListener(this);
-        btnCopyAccountNumber.setOnClickListener(this);
-        btnCopyPassword.setOnClickListener(this);
-        btnGoToWebsite.setOnClickListener(this);
-        btnEditItem.setOnClickListener(this);
-        btnEditWebsite.setOnClickListener(this);
+            btnCallAlternate.setOnClickListener(this);
+            btnCallPrimary.setOnClickListener(this);
+            btnCopyAccountNumber.setOnClickListener(this);
+            btnCopyPassword.setOnClickListener(this);
+            btnGoToWebsite.setOnClickListener(this);
+            btnEditItem.setOnClickListener(this);
+            btnEditWebsite.setOnClickListener(this);
 
-        tvPasswordItemName = (TextView) rootView.findViewById(R.id.tvPasswordItemName);
-        tvItemDetail = (TextView) rootView.findViewById(R.id.tvItemDetail);
-        tvWebsiteDetail = (TextView) rootView.findViewById(R.id.tvWebsiteDetail);
-        txtComments = (EditText) rootView.findViewById(R.id.txtComments);
-        txtComments.addTextChangedListener(new TextWatcher() {
-            @Override
-            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+            tvPasswordItemName = (TextView) rootView.findViewById(R.id.tvPasswordItemName);
+            tvItemDetail = (TextView) rootView.findViewById(R.id.tvItemDetail);
+            tvWebsiteDetail = (TextView) rootView.findViewById(R.id.tvWebsiteDetail);
+            txtComments = (EditText) rootView.findViewById(R.id.txtComments);
+            mCommentsTextWatcher = new TextWatcher() {
+                @Override
 
-            }
+                public void beforeTextChanged(CharSequence s, int start, int count, int after) {
 
-            @Override
-            public void onTextChanged(CharSequence s, int start, int before, int count) {
-                mIsDirty = true;
-            }
+                }
 
-            @Override
-            public void afterTextChanged(Editable s) {
+                @Override
+                public void onTextChanged(CharSequence s, int start, int before, int count) {
+                    mIsDirty = true;
+                }
 
-            }
-        });
+                @Override
+                public void afterTextChanged(Editable s) {
 
-        updateUI();
-        return rootView;
+                }
+            };
+
+            updateUI();
+            return rootView;
+
     }
 
     private void updateUI() {
         mPasswordItem = MainActivity.getActivePasswordItem();
+
         if (mPasswordItem != null) {
+
+            // inhibit text change event when loading updating the UI.
+            txtComments.removeTextChangedListener(mCommentsTextWatcher);
+
+            // fill the UI views
             tvPasswordItemName.setText(mPasswordItem.getName());
             tvItemDetail.setText(mPasswordItem.getItemDetail());
             tvWebsiteDetail.setText(mPasswordItem.getWebsiteDetail());
-            txtComments.setText(mPasswordItem.getComments());
+            // don't change comments if the user has made edits
+            if (!mIsDirty) {
+                txtComments.setText(mPasswordItem.getComments());
+            }
 
             btnGoToWebsite.setEnabled(true);
             if (mPasswordItem.getWebsiteURL() == null) {
@@ -156,6 +174,13 @@ public class PasswordItemDetailFragment extends Fragment implements View.OnClick
                     if (mPasswordItem.getGeneralAccountNumber() == null) {
                         btnCopyAccountNumber.setEnabled(false);
                     }
+                    break;
+
+                case clsItemTypes.SOFTWARE:
+                    if (mPasswordItem.getSoftwareKeyCode() == null) {
+                        btnCopyAccountNumber.setEnabled(false);
+                    }
+                    break;
             }
 
             if (mPasswordItem.getItemType_ID() == clsItemTypes.WEBSITES) {
@@ -171,7 +196,10 @@ public class PasswordItemDetailFragment extends Fragment implements View.OnClick
                 btnCallAlternate.setVisibility(View.VISIBLE);
                 btnCallPrimary.setVisibility(View.VISIBLE);
             }
-            mIsDirty = false;
+
+            //  mIsDirty = false;
+
+            txtComments.addTextChangedListener(mCommentsTextWatcher);
         }
     }
 
@@ -180,6 +208,14 @@ public class PasswordItemDetailFragment extends Fragment implements View.OnClick
         super.onActivityCreated(savedInstanceState);
         MyLog.i("PasswordItemDetailFragment", "onActivityCreated()");
         getActivity().getActionBar().setDisplayHomeAsUpEnabled(true);
+        MySettings.setOnSaveInstanceState(false);
+    }
+
+    @Override
+    public void onSaveInstanceState(Bundle outState) {
+        super.onSaveInstanceState(outState);
+        MyLog.i("PasswordItemDetailFragment", "onSaveInstanceState()");
+        MySettings.setOnSaveInstanceState(true);
     }
 
     @Override
@@ -194,11 +230,6 @@ public class PasswordItemDetailFragment extends Fragment implements View.OnClick
         updateUI();
     }
 
-    @Override
-    public void onSaveInstanceState(Bundle outState) {
-        super.onSaveInstanceState(outState);
-        MyLog.i("PasswordItemDetailFragment", "onSaveInstanceState()");
-    }
 
     @Override
     public void onPause() {
@@ -206,6 +237,8 @@ public class PasswordItemDetailFragment extends Fragment implements View.OnClick
         MyLog.i("PasswordItemDetailFragment", "onPause()");
         if (mIsDirty && mPasswordItem != null && txtComments != null) {
             mPasswordItem.setComments(txtComments.getText().toString().trim());
+            // save comment changes
+            EventBus.getDefault().post(new clsEvents.saveChangesToDropbox());
         }
         getActivity().getActionBar().setDisplayHomeAsUpEnabled(false);
     }
@@ -276,25 +309,77 @@ public class PasswordItemDetailFragment extends Fragment implements View.OnClick
 
     @Override
     public void onClick(View v) {
+        ClipboardManager clipboard = (ClipboardManager) getActivity().getSystemService(Context.CLIPBOARD_SERVICE);
+        String label = "";
+        String textForClip = "";
         switch (v.getId()) {
             case R.id.btnCallAlternate:
-                Toast.makeText(getActivity(), "TO COME: btnCallAlternate", Toast.LENGTH_SHORT).show();
+                String alternatePhoneNumber = mPasswordItem.getAlternatePhoneNumber();
+                if(!alternatePhoneNumber.isEmpty()) {
+                    Intent intent = new Intent(Intent.ACTION_CALL);
+                    intent.setData(Uri.parse("tel:" + alternatePhoneNumber));
+                    getActivity().startActivity(intent);
+                }
+                //Toast.makeText(getActivity(), "TO COME: btnCallAlternate", Toast.LENGTH_SHORT).show();
                 break;
 
             case R.id.btnCallPrimary:
-                Toast.makeText(getActivity(), "TO COME: btnCallPrimary", Toast.LENGTH_SHORT).show();
+                String primaryPhoneNumber = mPasswordItem.getPrimaryPhoneNumber();
+                if(!primaryPhoneNumber.isEmpty()) {
+                    Intent intent = new Intent(Intent.ACTION_CALL);
+                    intent.setData(Uri.parse("tel:" + primaryPhoneNumber));
+                    getActivity().startActivity(intent);
+                }
+               // Toast.makeText(getActivity(), "TO COME: btnCallPrimary", Toast.LENGTH_SHORT).show();
                 break;
 
             case R.id.btnCopyAccountNumber:
-                Toast.makeText(getActivity(), "TO COME: btnCopyAccountNumber", Toast.LENGTH_SHORT).show();
+                switch (mPasswordItem.getItemType_ID()) {
+                    case clsItemTypes.CREDIT_CARDS:
+                        label = "Credit Card Number";
+                        textForClip = mPasswordItem.getCreditCardAccountNumber();
+                        break;
+
+                    case clsItemTypes.GENERAL_ACCOUNTS:
+                        label = "Account Number";
+                        textForClip = mPasswordItem.getGeneralAccountNumber();
+                        break;
+
+                    case clsItemTypes.SOFTWARE:
+                        label = "Software Key Code";
+                        textForClip = mPasswordItem.getSoftwareKeyCode();
+                        break;
+                }
+
+                ClipData clip = ClipData.newPlainText(label, textForClip);
+                clipboard.setPrimaryClip(clip);
+                Toast.makeText(getActivity(), label + ": " + textForClip + " copied.", Toast.LENGTH_SHORT).show();
                 break;
 
             case R.id.btnCopyPassword:
-                Toast.makeText(getActivity(), "TO COME: btnCopyPassword", Toast.LENGTH_SHORT).show();
+                label = "Website Password";
+                textForClip = mPasswordItem.getWebsitePassword();
+                clip = ClipData.newPlainText(label, textForClip);
+                clipboard.setPrimaryClip(clip);
+                Toast.makeText(getActivity(), label + ": " + textForClip + " copied.", Toast.LENGTH_SHORT).show();
                 break;
 
             case R.id.btnGoToWebsite:
-                Toast.makeText(getActivity(), "TO COME: btnGoToWebsite", Toast.LENGTH_SHORT).show();
+                // copy the website password to the clipboard
+                label = "Website Password";
+                textForClip = mPasswordItem.getWebsitePassword();
+                clip = ClipData.newPlainText(label, textForClip);
+                clipboard.setPrimaryClip(clip);
+
+                // open the website
+                String websiteURL = mPasswordItem.getWebsiteURL();
+                if (!websiteURL.startsWith("http://") && !websiteURL.startsWith("https://")) {
+                    websiteURL = "http://" + websiteURL;
+                }
+                Intent browserIntent = new Intent(Intent.ACTION_VIEW, Uri.parse(websiteURL));
+                startActivity(browserIntent);
+
+                //Toast.makeText(getActivity(), "TO COME: btnGoToWebsite", Toast.LENGTH_SHORT).show();
                 break;
 
             case R.id.btnEditItem:

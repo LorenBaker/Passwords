@@ -67,6 +67,9 @@ public class EditGeneralAccountFragment extends Fragment {
         MyLog.i("EditGeneralAccountFragment", "onCreate()");
         if (getArguments() != null) {
             mIsNewPasswordItem = getArguments().getBoolean(ARG_IS_NEW_PASSWORD_ITEM);
+            if (mIsNewPasswordItem) {
+                mIsDirty = true;
+            }
             mPasswordItem = MainActivity.getActivePasswordItem();
         }
         setHasOptionsMenu(true);
@@ -189,7 +192,7 @@ public class EditGeneralAccountFragment extends Fragment {
 
     private void validateItemName() {
         String itemName = txtItemName.getText().toString().trim();
-        if(mPasswordItem==null){
+        if (mPasswordItem == null) {
             mPasswordItem = MainActivity.getActivePasswordItem();
         }
         if (!itemName.equalsIgnoreCase(mOriginalItemName)) {
@@ -226,6 +229,7 @@ public class EditGeneralAccountFragment extends Fragment {
             mPasswordItem = MainActivity.getActivePasswordItem();
         }
         getActivity().getActionBar().setDisplayHomeAsUpEnabled(true);
+        MySettings.setOnSaveInstanceState(false);
     }
 
 
@@ -236,6 +240,7 @@ public class EditGeneralAccountFragment extends Fragment {
 
         outState.putBoolean(ARG_IS_DIRTY, mIsDirty);
         outState.putString(ARG_ACCOUNT_NUMBER, mAccountNumber);
+        MySettings.setOnSaveInstanceState(true);
     }
 
     @Override
@@ -253,31 +258,32 @@ public class EditGeneralAccountFragment extends Fragment {
     }
 
     private void updateUI() {
-        if(mPasswordItem==null){
-            mPasswordItem = MainActivity.getActivePasswordItem();
-        }
-        if (mPasswordItem != null) {
-            txtItemName.setText(mPasswordItem.getName());
-            if (mOriginalItemName.isEmpty()) {
-                mOriginalItemName = mPasswordItem.getName();
+        if (!mIsDirty) {
+            if (mPasswordItem == null) {
+                mPasswordItem = MainActivity.getActivePasswordItem();
             }
+            if (mPasswordItem != null) {
+                txtItemName.setText(mPasswordItem.getName());
+                if (mOriginalItemName.isEmpty()) {
+                    mOriginalItemName = mPasswordItem.getName();
+                }
 
-            txtAccountNumber.setText((mPasswordItem.getGeneralAccountNumber()));
+                txtAccountNumber.setText((mPasswordItem.getGeneralAccountNumber()));
 
-            String formattedPrimaryPhoneNumber = clsFormattingMethods.formatPhoneNumber(mPasswordItem.getPrimaryPhoneNumber());
-            String formattedAlternatePhoneNumber = clsFormattingMethods.formatPhoneNumber(mPasswordItem.getAlternatePhoneNumber());
-            txtPrimaryPhoneNumber.setText(formattedPrimaryPhoneNumber);
-            txtAlternatePhoneNumber.setText(formattedAlternatePhoneNumber);
-            mIsDirty = false;
+                String formattedPrimaryPhoneNumber = clsFormattingMethods.formatPhoneNumber(mPasswordItem.getPrimaryPhoneNumber());
+                String formattedAlternatePhoneNumber = clsFormattingMethods.formatPhoneNumber(mPasswordItem.getAlternatePhoneNumber());
+                txtPrimaryPhoneNumber.setText(formattedPrimaryPhoneNumber);
+                txtAlternatePhoneNumber.setText(formattedAlternatePhoneNumber);
+            }
         }
     }
 
     private void updatePasswordItem() {
-        if(mPasswordItem==null){
+        if (mPasswordItem == null) {
             mPasswordItem = MainActivity.getActivePasswordItem();
         }
 
-        if(mPasswordItem!=null) {
+        if (mPasswordItem != null) {
             mPasswordItem.setName(txtItemName.getText().toString().trim());
             mPasswordItem.setGeneralAccountNumber(txtAccountNumber.getText().toString().trim());
 
@@ -288,6 +294,9 @@ public class EditGeneralAccountFragment extends Fragment {
             mPasswordItem.setPrimaryPhoneNumber(unformattedPrimaryPhoneNumber);
             mPasswordItem.setAlternatePhoneNumber(unformattedAlternatePhoneNumber);
             mIsDirty = false;
+
+            // save the changes
+            EventBus.getDefault().post(new clsEvents.saveChangesToDropbox());
         }
     }
 
@@ -349,7 +358,6 @@ public class EditGeneralAccountFragment extends Fragment {
         super.onPause();
         MyLog.i("EditGeneralAccountFragment", "onPause()");
         if (mIsDirty) {
-            EventBus.getDefault().post(new clsEvents.isDirty());
             updatePasswordItem();
         }
         getActivity().getActionBar().setDisplayHomeAsUpEnabled(false);

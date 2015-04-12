@@ -14,6 +14,9 @@ public class clsItemTypes {
     public static final CharSequence[] ITEM_TYPES = {"Credit Cards", "General Accounts", "Software", "Websites"};
 
 
+    private int ItemTypeID;
+    private String ItemType;
+
     public int getItemTypeID() {
         return ItemTypeID;
     }
@@ -29,7 +32,4 @@ public class clsItemTypes {
     public void setItemType(String itemType) {
         ItemType = itemType;
     }
-
-    private int ItemTypeID;
-    private String ItemType;
 }
