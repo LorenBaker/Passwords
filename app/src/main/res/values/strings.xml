@@ -27,7 +27,10 @@
     <string name="btnCreateNewUser_text">Create New User</string>
     <string name="btnSelectDropboxFolder_text">Select Dropbox Folder\nCurrent folder:\n</string>
     <string name="btnOK_text">OK</string>
-    <string name="btnEditUserName_text">Edit User Name</string>
+    <string name="btnCancel_text">Cancel</string>
+    <string name="btnYes_text">Yes</string>
+    <string name="btnNo_text">No</string>
+    <string name="btnEditUserName_text">Edit User Name:\u0020</string>
     <string name="btnChangeAppPassword_text">Change Application Password</string>
     <string name="btnSelectDropboxFolder_setText">"Select Dropbox Folder\nCurrent folder:\n"</string>
     <string name="btnDisplay_setText_Display">Display</string>
@@ -35,5 +38,16 @@
     <string name="btnSelectUser_text">Select User\nCurrent user:\u0020</string>
     <string name="btnSelectUser_dialog_setTitle">Select User</string>
     <string name="none_text">NONE</string>
+    <string name="btnUserSettings_text">User Settings: New, Edit, Delete</string>
+    <string name="btnDeleteUser_text">Delete User:\u0020</string>
+    <string name="enterNewUserName_dialog_title">Enter New User Name</string>
+    <string name="newUserName_editText_hint">New User Name</string>
+    <string name="editUserName_dialog_title">Edit User Name</string>
+    <string name="editUserName_editText_hint">Edit User Name</string>
+    <string name="deleteUser_dialog_title">Confirm Deleting User</string>
+    <string name="deleteUser_dialog_message">Do you want to permanently delete user \"</string>
+    <string name="noUsersExist_dialog_title">No Users Exist</string>
+    <string name="noUsersExist_dialog_message">Please select \" Create New User\"</string>
+
 
 </resources>

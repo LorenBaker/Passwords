@@ -9,7 +9,13 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.security.InvalidAlgorithmParameterException;
+import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
+
+import javax.crypto.BadPaddingException;
+import javax.crypto.IllegalBlockSizeException;
+import javax.crypto.NoSuchPaddingException;
 
 import de.greenrobot.event.EventBus;
 import lbconsulting.com.passwords.activities.MainActivity;
@@ -38,14 +44,17 @@ public class MySettings {
 
     private static final String SETTING_DROPBOX_FOLDER_NAME = "dropboxFolderName";
     private static final String DEFAULT_DROPBOX_PATH = "No Folder Selected";
-    private static final String DROPBOX_FILENAME = "/PasswordsDatafile.txt";
+    public static final String DROPBOX_FILENAME = "PasswordsDatafile.txt";
+    private final static String mKey = "0a24189320af961a04451bc916fc283a";
     //private static final String DROPBOX_FILENAME = DEFAULT_DROPBOX_PATH + "/JsonTest.txt";
 
     public static final long DEFAULT_LONGEVITY_MILLISECONDS = 15 * 60000;
+    public static final int MAX_NUMBER_OF_BACKUP_FILES = 5;
 
-    public static final String PASSWORDS_FILENAME = "passwordsFile";
 
-    public static final String ARG_ACTIVE_FRAGMENT = "arg_active_fragment";
+    //public static final String PASSWORDS_FILENAME = "passwordsFile";
+
+    //public static final String ARG_ACTIVE_FRAGMENT = "arg_active_fragment";
     public static final int FRAG_ITEMS_LIST = 10;
     public static final int FRAG_ITEM_DETAIL = 20;
     public static final int FRAG_EDIT_CREDIT_CARD = 31;
@@ -55,6 +64,7 @@ public class MySettings {
     public static final int FRAG_SETTINGS = 40;
     public static final int FRAG_APP_PASSWORD = 41;
     public static final int FRAG_DROPBOX_LIST = 42;
+    public static final int FRAG_USER_SETTINGS = 43;
 
     public static final String[] CreditCardNames = {"American Express", "Diners Club", "Discover", "JCB", "MasterCard", "VISA"};
     public static final String UNKNOWN = "UNKNOWN";
@@ -102,7 +112,8 @@ public class MySettings {
         return result;
     }
 
-    public static void setActiveUserName(String newName) {
+/*    public static void setActiveUserName(String newName) {
+        // TODO: Why do we need method setActiveUserName
         clsUsers result = null;
         int activeUserID = getActiveUserID();
         if (activeUserID > 0) {
@@ -114,9 +125,10 @@ public class MySettings {
         }
         if (result != null) {
             result.setUserName(newName);
-            EventBus.getDefault().post(new clsEvents.saveChangesToDropbox());
+            // TODO: Verify that saving changes to dropbox is NOT needed.
+            //EventBus.getDefault().post(new clsEvents.saveChangesToDropbox());
         }
-    }
+    }*/
 
     public static String getDropboxFolderName() {
         SharedPreferences passwordsSavedState =
@@ -133,7 +145,7 @@ public class MySettings {
     }
 
     public static String getDropboxFilename() {
-        return getDropboxFolderName() + DROPBOX_FILENAME;
+        return getDropboxFolderName() + "/" + DROPBOX_FILENAME;
     }
 
     public static int getActiveFragmentID() {
@@ -165,36 +177,79 @@ public class MySettings {
     }
 
     public static String getAppPassword() {
-        SharedPreferences passwordsSavedState =
-                mContext.getSharedPreferences(PASSWORDS_SAVED_STATES, 0);
-
         String appPassword = NOT_AVAILABLE;
         long passwordSavedTime = getPasswordSavedTime();
         long elapsedTimeMs = System.currentTimeMillis() - passwordSavedTime;
         long passwordLongevity = getPasswordLongevity();
         if (elapsedTimeMs < passwordLongevity) {
-            // TODO: decrypt appPassword
-            appPassword = passwordsSavedState.getString(SETTING_APP_PASSWORD, NOT_AVAILABLE);
+            appPassword = getSavedAppPassword();
         }
 
         return appPassword;
     }
 
     public static String getSavedAppPassword() {
+        String appPassword = NOT_AVAILABLE;
         SharedPreferences passwordsSavedState =
                 mContext.getSharedPreferences(PASSWORDS_SAVED_STATES, 0);
-        return passwordsSavedState.getString(SETTING_APP_PASSWORD, NOT_AVAILABLE);
+        String encryptedIVPassword = passwordsSavedState.getString(SETTING_APP_PASSWORD, NOT_AVAILABLE);
+        String iv = encryptedIVPassword.substring(0, 16);
+        String encryptedPassword = encryptedIVPassword.substring(16);
+
+        try {
+            CryptLib mCrypt = new CryptLib();
+            appPassword = mCrypt.decrypt(encryptedPassword, mKey, iv);
+        } catch (NoSuchAlgorithmException e) {
+            e.printStackTrace();
+        } catch (NoSuchPaddingException e) {
+            e.printStackTrace();
+        } catch (InvalidKeyException e) {
+            e.printStackTrace();
+        } catch (UnsupportedEncodingException e) {
+            e.printStackTrace();
+        } catch (InvalidAlgorithmParameterException e) {
+            e.printStackTrace();
+        } catch (IllegalBlockSizeException e) {
+            e.printStackTrace();
+        } catch (BadPaddingException e) {
+            e.printStackTrace();
+        }
+        //MyLog.d("MySettings", "getSavedAppPassword. Password=" + appPassword);
+        return appPassword;
     }
+
 
     public static void setAppPassword(String appPassword) {
         MyLog.i("MySettings", "setAppPassword to: " + appPassword);
         // TODO: encrypt appPassword
-        setPasswordSavedTime();
-        SharedPreferences passwordsSavedState =
-                mContext.getSharedPreferences(PASSWORDS_SAVED_STATES, 0);
-        SharedPreferences.Editor editor = passwordsSavedState.edit();
-        editor.putString(SETTING_APP_PASSWORD, appPassword);
-        editor.apply();
+
+        try {
+            CryptLib mCrypt = new CryptLib();
+            String iv = CryptLib.generateRandomIV(16);
+            String encryptedPassword = mCrypt.encrypt(appPassword, mKey, iv);
+            encryptedPassword = iv + encryptedPassword;
+
+            setPasswordSavedTime();
+            SharedPreferences passwordsSavedState =
+                    mContext.getSharedPreferences(PASSWORDS_SAVED_STATES, 0);
+            SharedPreferences.Editor editor = passwordsSavedState.edit();
+            editor.putString(SETTING_APP_PASSWORD, encryptedPassword);
+            editor.apply();
+        } catch (NoSuchAlgorithmException e) {
+            e.printStackTrace();
+        } catch (NoSuchPaddingException e) {
+            e.printStackTrace();
+        } catch (InvalidKeyException e) {
+            e.printStackTrace();
+        } catch (UnsupportedEncodingException e) {
+            e.printStackTrace();
+        } catch (InvalidAlgorithmParameterException e) {
+            e.printStackTrace();
+        } catch (IllegalBlockSizeException e) {
+            e.printStackTrace();
+        } catch (BadPaddingException e) {
+            e.printStackTrace();
+        }
     }
 
     public static long getPasswordSavedTime() {
@@ -212,13 +267,13 @@ public class MySettings {
         editor.apply();
     }
 
-    public static boolean getOnSaveInstanceState(){
+    public static boolean getOnSaveInstanceState() {
         SharedPreferences passwordsSavedState =
                 mContext.getSharedPreferences(PASSWORDS_SAVED_STATES, 0);
         return passwordsSavedState.getBoolean(SETTING_ON_SAVE_INSTANCE_STATE, false);
     }
 
-    public static void setOnSaveInstanceState(boolean onSaveInstanceState){
+    public static void setOnSaveInstanceState(boolean onSaveInstanceState) {
         SharedPreferences passwordsSavedState =
                 mContext.getSharedPreferences(PASSWORDS_SAVED_STATES, 0);
         SharedPreferences.Editor editor = passwordsSavedState.edit();

@@ -31,9 +31,6 @@ import lbconsulting.com.passwords.classes.MySettings;
 import lbconsulting.com.passwords.classes.clsEvents;
 import lbconsulting.com.passwords.classes.clsUsers;
 
-/**
- * A fragment that allows the editing of a Credit Card
- */
 public class AppPasswordFragment extends Fragment implements View.OnClickListener {
 
     // fragment state variables
@@ -143,7 +140,8 @@ public class AppPasswordFragment extends Fragment implements View.OnClickListene
 
     private void updateUI() {
         // TODO: Remove "Test Password"
-        txtAppPassword.setText("Test Password");
+        //txtAppPassword.setText("GoBeavers1972");
+        showButtonText();
 
         switch (mState) {
             case STATE_PASSWORD_ONLY:
@@ -395,7 +393,9 @@ public class AppPasswordFragment extends Fragment implements View.OnClickListene
                             mActiveUser.setUserID(newUserID);
                             mActiveUser.setUserName(newUserName);
                             MySettings.setActiveUserID(newUserID);
-                            MySettings.setActiveUserName(newUserName);
+                            // Save new user
+                            EventBus.getDefault().post(new clsEvents.saveChangesToDropbox());
+                           // MySettings.setActiveUserName(newUserName);
                             MainActivity.addNewUser(mActiveUser);
                             updateUI();
                             dialog.dismiss();
@@ -448,9 +448,10 @@ public class AppPasswordFragment extends Fragment implements View.OnClickListene
                     builder.setTitle(getString(R.string.btnSelectUser_dialog_setTitle));
                     builder.setSingleChoiceItems(names, selectedUserPosition, new DialogInterface.OnClickListener() {
                         public void onClick(DialogInterface dialog, int item) {
-                            clsUsers selectedUser = users.get(item);
-                            MySettings.setActiveUserID(selectedUser.getUserID());
-                            MySettings.setActiveUserName(selectedUser.getUserName());
+                            mActiveUser = users.get(item);
+                            MySettings.setActiveUserID(mActiveUser.getUserID());
+                            // TODO: btnSelectUser; Verify that setActiveUserName is needed?
+                            //MySettings.setActiveUserName(mActiveUser.getUserName());
                             // MySettings.setAppPasswordState(STATE_PASSWORD_ONLY);
                             updateUI();
                             dialog.dismiss();
@@ -706,6 +707,8 @@ public class AppPasswordFragment extends Fragment implements View.OnClickListene
 
         if (mActiveUser != null) {
             btnSelectUser.setText(getString(R.string.btnSelectUser_text) + mActiveUser.getUserName());
+        } else{
+            btnSelectUser.setText(getString(R.string.btnSelectUser_text) +"User Not Selected");
         }
         btnSelectDropboxFolder.setText(getString(R.string.btnSelectDropboxFolder_setText)
                 + MySettings.getDropboxFolderName());

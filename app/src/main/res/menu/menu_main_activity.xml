@@ -19,6 +19,13 @@
         app:showAsAction="never" />
 
     <item
+        android:id="@+id/action_refresh_from_dropbox"
+        android:title="Refresh"
+        android:orderInCategory="1010"
+        android:icon="@drawable/ic_action_refresh"
+        app:showAsAction="never" />
+
+    <item
         android:id="@+id/action_help"
         android:title="Help"
         android:orderInCategory="1020"

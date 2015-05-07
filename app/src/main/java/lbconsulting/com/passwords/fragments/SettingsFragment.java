@@ -28,9 +28,6 @@ import lbconsulting.com.passwords.classes.MySettings;
 import lbconsulting.com.passwords.classes.clsEvents;
 import lbconsulting.com.passwords.classes.clsUsers;
 
-/**
- * A fragment that allows the editing of a Credit Card
- */
 public class SettingsFragment extends Fragment implements View.OnClickListener {
 
     // fragment state variables
@@ -39,8 +36,7 @@ public class SettingsFragment extends Fragment implements View.OnClickListener {
     private clsUsers mActiveUser;
 
     private Button btnSelectUser;
-    private Button btnCreateNewUser;
-    private Button btnEditUserName;
+    private Button btnUserSettings;
     private Button btnSelectPasswordLongevity;
     private Button btnSelectDropboxFolder;
 
@@ -68,14 +64,12 @@ public class SettingsFragment extends Fragment implements View.OnClickListener {
         View rootView = inflater.inflate(R.layout.frag_settings, container, false);
 
         btnSelectUser = (Button) rootView.findViewById(R.id.btnSelectUser);
-        btnCreateNewUser = (Button) rootView.findViewById(R.id.btnCreateNewUser);
-        btnEditUserName = (Button) rootView.findViewById(R.id.btnEditUserName);
+        btnUserSettings = (Button) rootView.findViewById(R.id.btnUserSettings);
         btnSelectPasswordLongevity = (Button) rootView.findViewById(R.id.btnSelectPasswordLongevity);
         btnSelectDropboxFolder = (Button) rootView.findViewById(R.id.btnSelectDropboxFolder);
 
         btnSelectUser.setOnClickListener(this);
-        btnCreateNewUser.setOnClickListener(this);
-        btnEditUserName.setOnClickListener(this);
+        btnUserSettings.setOnClickListener(this);
         btnSelectPasswordLongevity.setOnClickListener(this);
         btnSelectDropboxFolder.setOnClickListener(this);
 
@@ -227,7 +221,7 @@ public class SettingsFragment extends Fragment implements View.OnClickListener {
                     builder.setSingleChoiceItems(names, selectedUserPosition, new DialogInterface.OnClickListener() {
                         public void onClick(DialogInterface dialog, int item) {
                             mActiveUser = users.get(item);
-                            selectActiveUser();
+                            selectActiveUser(false);
                             dialog.dismiss();
                         }
                     });
@@ -236,90 +230,8 @@ public class SettingsFragment extends Fragment implements View.OnClickListener {
                 }
                 break;
 
-            case R.id.btnCreateNewUser:
-                AlertDialog.Builder newUserDialog = new AlertDialog.Builder(getActivity());
-
-                newUserDialog.setTitle("Enter New User Name");
-                newUserDialog.setMessage("");
-
-                // Set an EditText view to get user input
-                final EditText input = new EditText(getActivity());
-                input.setHint("New User Name");
-                input.setInputType(InputType.TYPE_TEXT_FLAG_CAP_WORDS);
-                newUserDialog.setView(input);
-
-                newUserDialog.setPositiveButton("OK", new DialogInterface.OnClickListener() {
-                    public void onClick(DialogInterface dialog, int whichButton) {
-                        String newUserName = input.getText().toString().trim();
-                        if (isUnique(newUserName)) {
-                            int newUserID = MainActivity.getNextUserID();
-                            mActiveUser = new clsUsers();
-                            mActiveUser.setUserID(newUserID);
-                            mActiveUser.setUserName(newUserName);
-                            MySettings.setActiveUserID(newUserID);
-                            MySettings.setActiveUserName(newUserName);
-                            MainActivity.addNewUser(mActiveUser);
-                            selectActiveUser();
-                            dialog.dismiss();
-                        } else {
-                            dialog.dismiss();
-                            MyLog.e("SettingsFragment", "onClick OK: new user is not unique");
-                            MainActivity.showOkDialog(getActivity(), "Failed to create new user",
-                                    "The provide user name \"" + newUserName + "\" already exists!");
-                        }
-                    }
-                });
-
-                newUserDialog.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
-                    public void onClick(DialogInterface dialog, int whichButton) {
-                        // Canceled.
-                        dialog.dismiss();
-                    }
-                });
-
-                newUserDialog.show();
-
-                break;
-
-            case R.id.btnEditUserName:
-                AlertDialog.Builder editUserDialog = new AlertDialog.Builder(getActivity());
-
-                editUserDialog.setTitle("Edit User Name");
-                editUserDialog.setMessage("");
-
-                // Set an EditText view to get user input
-                final EditText userNameInput = new EditText(getActivity());
-                userNameInput.setHint("Edit User Name");
-                userNameInput.setText(mActiveUser.getUserName());
-
-                userNameInput.setInputType(InputType.TYPE_TEXT_FLAG_CAP_WORDS);
-                editUserDialog.setView(userNameInput);
-
-                editUserDialog.setPositiveButton("OK", new DialogInterface.OnClickListener() {
-                    public void onClick(DialogInterface dialog, int whichButton) {
-                        String newUserName = userNameInput.getText().toString().trim();
-                        if (isUnique(newUserName)) {
-                            mActiveUser.setUserName(newUserName);
-                            MySettings.setActiveUserName(newUserName);
-                            selectActiveUser();
-                            dialog.dismiss();
-                        } else {
-                            dialog.dismiss();
-                            MyLog.e("SettingsFragment", "onClick OK: new user name is not unique");
-                            MainActivity.showOkDialog(getActivity(), "Failed to edit user name",
-                                    "The provide use name \"" + newUserName + "\" already exists!");
-                        }
-                    }
-                });
-
-                editUserDialog.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
-                    public void onClick(DialogInterface dialog, int whichButton) {
-                        // Canceled.
-                        dialog.dismiss();
-                    }
-                });
-
-                editUserDialog.show();
+            case R.id.btnUserSettings:
+                EventBus.getDefault().post(new clsEvents.replaceFragment(-1, MySettings.FRAG_USER_SETTINGS, false));
                 break;
 
             case R.id.btnSelectPasswordLongevity:
@@ -422,10 +334,12 @@ public class SettingsFragment extends Fragment implements View.OnClickListener {
         return result;
     }
 
-    private void selectActiveUser() {
+    private void selectActiveUser(boolean saveToDropbox) {
         MySettings.setActiveUserID(mActiveUser.getUserID());
         updateUI();
-        EventBus.getDefault().post(new clsEvents.saveChangesToDropbox());
+        if (saveToDropbox) {
+            EventBus.getDefault().post(new clsEvents.saveChangesToDropbox());
+        }
         EventBus.getDefault().post(new clsEvents.replaceFragment(-1, MySettings.FRAG_ITEMS_LIST, false));
     }
 }

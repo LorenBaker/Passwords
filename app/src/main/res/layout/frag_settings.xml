@@ -13,18 +13,12 @@
         android:text="@string/btnSelectUser_text" />
 
     <Button
-        android:id="@+id/btnCreateNewUser"
+        android:id="@+id/btnUserSettings"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         style="@style/setting_button"
-        android:text="@string/btnCreateNewUser_text" />
+        android:text="@string/btnUserSettings_text" />
 
-    <Button
-        android:id="@+id/btnEditUserName"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        style="@style/setting_button"
-        android:text="@string/btnEditUserName_text" />
 
     <Button
         android:id="@+id/btnSelectDropboxFolder"

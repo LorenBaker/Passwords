@@ -2,6 +2,15 @@ package lbconsulting.com.passwords.classes;
 
 import android.widget.Spinner;
 
+import com.dropbox.sync.android.DbxException;
+import com.dropbox.sync.android.DbxFile;
+import com.dropbox.sync.android.DbxFileInfo;
+import com.dropbox.sync.android.DbxFileSystem;
+import com.dropbox.sync.android.DbxPath;
+
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -9,28 +18,6 @@ import java.util.regex.Pattern;
  * Created by Loren on 3/10/2015.
  */
 public class clsFormattingMethods {
-
-/*    public static String formatKeyCode(String keyCode, int spacing) {
-        String unformatKeyCode = unformatKeyCode(keyCode);
-        String formattedKeyCode = "";
-        int start = 0;
-        int end = spacing;
-        if (unformatKeyCode.length() < spacing) {
-            end = unformatKeyCode.length();
-            formattedKeyCode = unformatKeyCode;
-        } else {
-            formattedKeyCode = unformatKeyCode.substring(start, end);
-            for (int i = spacing; i < unformatKeyCode.length(); i += spacing) {
-                start = i;
-                end = start + spacing;
-                if (end > unformatKeyCode.length()) {
-                    end = unformatKeyCode.length();
-                }
-                formattedKeyCode = formattedKeyCode +" - "+ unformatKeyCode.substring(start, end);
-            }
-        }
-        return formattedKeyCode;
-    }*/
 
     public static String unformatKeyCode(String keyCode) {
         String unformattedKeycode = keyCode.replace("-", "");
@@ -268,7 +255,7 @@ public class clsFormattingMethods {
         if (accountNumber.isEmpty()) {
             formattedNumber = "";
         } else {
-            int end=subGroupLength;
+            int end = subGroupLength;
             if (end > accountNumber.length()) {
                 end = accountNumber.length();
             }
@@ -315,5 +302,178 @@ public class clsFormattingMethods {
         }
 
         return formattedNumber;
+    }
+
+    // This method accepts two strings the represent two files to
+    // compare. A returns true if the contents of the files
+    // are the same. A returns false if the files are not the same.
+    public static boolean FileCompare(DbxFileSystem dbxFs, DbxFile file1, String filename2) {
+
+        try {
+            // check for the dropbox file
+            DbxPath file2Path = new DbxPath(filename2);
+
+            if (!dbxFs.isFile(file2Path)) {
+                MyLog.e("clsFormattingMethods", "FileCompare: Source file: " + filename2 + " not found.");
+                return false;
+            }
+
+            // Open file2
+            DbxFile file2 = dbxFs.open(file2Path);
+
+            if (file1 != null && file2 != null) {
+                DbxFileInfo file1Info = file1.getInfo();
+                DbxFileInfo file2Info = file2.getInfo();
+                MyLog.d("clsFormattingMethods", "FileCompare: file1 size = "+file1Info.size +" ;file " + filename2 + " size = " +file2Info.size);
+
+                // Check the file sizes. If they are not the same, the files
+                // are not the same.
+                if (file1Info.size != file2Info.size) {
+                    // Close file2
+                    if (file2 != null) {
+                        file2.close();
+                    }
+
+                    // Return false to indicate files are different
+                    return false;
+                }
+
+                // Read and compare a byte from each file until either a
+                // non-matching set of bytes is found or until the end of
+                // file1 is reached.
+                FileInputStream file1Stream = file1.getReadStream();
+                FileInputStream file2Stream = file2.getReadStream();
+                int read = -1;
+                byte[] file1Buffer = new byte[1];
+                byte[] file2Buffer = new byte[1];
+                boolean result = true;
+                int position =0;
+                while ((read = file1Stream.read(file1Buffer)) != -1) {
+                    file2Stream.read(file2Buffer);
+                    if (file1Buffer[0] != file2Buffer[0]) {
+                        MyLog.d("clsFormattingMethods", "FileCompare: Bytes not equal at position = " + position);
+                        result = false;
+                        break;
+                    }
+                    position++;
+                }
+
+                // close the file streams
+                file1Stream.close();
+                file2Stream.close();
+
+                // close file2 ... file1 stays open, it is the Passwords data file
+
+                if (file2 != null) {
+                    file2.close();
+                }
+
+                if (result) {
+                    result = ((file1Buffer[0] == file2Buffer[0]));
+                }
+                MyLog.d("clsFormattingMethods", "FileCompare: files the same: " + result);
+                return result;
+
+            } else {
+                MyLog.e("clsFormattingMethods", "FileCompare: unable to open one or both files!");
+                return false;
+            }
+        } catch (DbxException e) {
+            MyLog.e("clsFormattingMethods", "FileCompare: DbxException: " + e.toString());
+            e.printStackTrace();
+            return false;
+
+        } catch (IOException e) {
+            MyLog.e("clsFormattingMethods", "FileCompare: IOException: " + e.toString());
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    public static boolean FileCopy(DbxFileSystem dbxFs, String sourceFilename, String destinationFilename) {
+        // Determine if the same file was referenced two times.
+        if (sourceFilename.toUpperCase().equals(destinationFilename.toUpperCase())) {
+            // Return false ... did not copy the file
+            return false;
+        }
+
+        try {
+            DbxPath sourceFilePath = new DbxPath(sourceFilename);
+
+            if (!dbxFs.isFile(sourceFilePath)) {
+                MyLog.i("clsFormattingMethods", "FileCopy: Source file = " + sourceFilename + " not found.");
+                return false;
+            }
+
+            // Open source file
+            DbxFile sourceFile = dbxFs.open(sourceFilePath);
+            return FileCopy(dbxFs, sourceFile, destinationFilename, true);
+
+        } catch (DbxException e) {
+            MyLog.e("clsFormattingMethods", "FileCopy(string, string): DbxException" + e.getMessage());
+            e.printStackTrace();
+            return false;
+        }
+
+    }
+
+    public static boolean FileCopy(DbxFileSystem dbxFs, DbxFile sourceFile, String destinationFilename, boolean closeSourceFile) {
+
+        DbxFile destinationFile = null;
+
+        try {
+            // check for the dropbox file
+            DbxPath destinationFilePath = new DbxPath(destinationFilename);
+
+            // check if the destination file exists ... if so, delete it.
+            if (dbxFs.isFile(destinationFilePath)) {
+                MyLog.i("clsFormattingMethods", "FileCopy: DELETING existing destination file: " + destinationFilename);
+                dbxFs.delete(destinationFilePath);
+            }
+
+            // Create then Open the destination file
+            destinationFile = dbxFs.create(destinationFilePath);
+            //destinationFile = dbxFs.open(destinationFilePath);
+
+            // get input and output streams
+            FileInputStream sourceFileInputStream = sourceFile.getReadStream();
+            FileOutputStream destinationFileOutputStream = destinationFile.getWriteStream();
+
+            // copy the file
+            byte[] buf = new byte[1024];
+            int bytesRead;
+            while ((bytesRead = sourceFileInputStream.read(buf)) > 0) {
+                destinationFileOutputStream.write(buf, 0, bytesRead);
+            }
+
+            // close the input and output streams
+            sourceFileInputStream.close();
+            destinationFileOutputStream.close();
+
+            DbxFileInfo destinationFileInfo = destinationFile.getInfo();
+            String msg = "backup file: " + destinationFilename + " written: size = " + destinationFileInfo.size;
+            MyLog.i("clsFormattingMethods", "FileCopy: " + msg);
+
+            return true;
+
+        } catch (DbxException e) {
+            MyLog.e("clsFormattingMethods", "FileCopy: DbxException: " + e.toString());
+            e.printStackTrace();
+            return false;
+
+        } catch (IOException e) {
+            MyLog.e("clsFormattingMethods", "FileCopy: IOException: " + e.toString());
+            e.printStackTrace();
+            return false;
+
+        } finally {
+            // Close the files
+            if (sourceFile != null && closeSourceFile) {
+                sourceFile.close();
+            }
+            if (destinationFile != null) {
+                destinationFile.close();
+            }
+        }
     }
 }

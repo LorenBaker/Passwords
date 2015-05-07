@@ -47,6 +47,7 @@ import lbconsulting.com.passwords.classes.CryptLib;
 import lbconsulting.com.passwords.classes.MyLog;
 import lbconsulting.com.passwords.classes.MySettings;
 import lbconsulting.com.passwords.classes.clsEvents;
+import lbconsulting.com.passwords.classes.clsFormattingMethods;
 import lbconsulting.com.passwords.classes.clsItemTypes;
 import lbconsulting.com.passwords.classes.clsLabPasswords;
 import lbconsulting.com.passwords.classes.clsPasswordItem;
@@ -60,11 +61,11 @@ import lbconsulting.com.passwords.fragments.EditWebsiteFragment;
 import lbconsulting.com.passwords.fragments.PasswordItemDetailFragment;
 import lbconsulting.com.passwords.fragments.PasswordItemsListFragment;
 import lbconsulting.com.passwords.fragments.SettingsFragment;
+import lbconsulting.com.passwords.fragments.UserSettingsFragment;
 
 
 public class MainActivity extends FragmentActivity {
     // TODO: Look at menu item order
-    // TODO: Make Passwords App Icons
     // TODO: What happens if remote user deletes a passwords item that is currently being edited?
 
 
@@ -81,7 +82,7 @@ public class MainActivity extends FragmentActivity {
     private static int mLastPasswordItemID = 0;
 
     private static DbxFile.Listener mJsonDataFileListener;
-    private static DbxFile mJsonDataFile = null;
+    private static DbxFile mPasswordsDropboxDataFile = null;
 
     public static final int OPEN_FILE_RESULT_FAIL = -1;
     public static final int OPEN_FILE_RESULT_SUCCESS = 2;
@@ -96,7 +97,7 @@ public class MainActivity extends FragmentActivity {
     //private int mDownloadResult = DOWNLOAD_RESULT_FAIL_READING_ENCRYPTED_FILE;
 
     public static boolean isPasswordDataFileOpen() {
-        return mJsonDataFile != null;
+        return mPasswordsDropboxDataFile != null;
     }
 
     private static int mLastUserID = 0;
@@ -382,6 +383,19 @@ public class MainActivity extends FragmentActivity {
                     }
                     break;
 
+                case MySettings.FRAG_USER_SETTINGS:
+                    // don't replace fragment if restarting from onSaveInstanceState
+                    if (!MySettings.getOnSaveInstanceState()) {
+                        fm.beginTransaction()
+                                .setTransition(FragmentTransaction.TRANSIT_FRAGMENT_FADE)
+                                .replace(R.id.fragment_container,
+                                        UserSettingsFragment.newInstance(), "FRAG_USER_SETTINGS")
+                                .addToBackStack("FRAG_USER_SETTINGS")
+                                .commit();
+                        MyLog.i("MainActivity", "showFragments: FRAG_USER_SETTINGS");
+                    }
+                    break;
+
                 case MySettings.FRAG_APP_PASSWORD:
                     clearBackStack();
                     fm.beginTransaction()
@@ -501,6 +515,17 @@ public class MainActivity extends FragmentActivity {
             new writeLabPasswordData(this).execute(true);
             return true;
 
+        } else if (id == R.id.action_refresh_from_dropbox) {
+            try {
+                mPasswordsDropboxDataFile.update();
+                MyLog.i("MainActivity", "action_refresh_from_dropbox");
+                new readLabPasswordData().execute();
+            } catch (DbxException e) {
+                MyLog.e("MainActivity", "onOptionsItemSelected: action_refresh_from_dropbox: DbxException " + e.getMessage());
+                e.printStackTrace();
+            }
+            return true;
+
         } else if (id == R.id.action_settings) {
             MySettings.setActiveFragmentID(MySettings.FRAG_SETTINGS);
             showFragments();
@@ -524,9 +549,9 @@ public class MainActivity extends FragmentActivity {
     protected void onDestroy() {
         MyLog.i("MainActivity", "onDestroy()");
         super.onDestroy();
-        if (mJsonDataFile != null) {
+        if (mPasswordsDropboxDataFile != null) {
             // close the json data file
-            mJsonDataFile.close();
+            mPasswordsDropboxDataFile.close();
         }
         //MySettings.setOnSaveInstanceState(false);
         EventBus.getDefault().unregister(this);
@@ -536,7 +561,7 @@ public class MainActivity extends FragmentActivity {
     protected void onPause() {
         MyLog.i("MainActivity", "onPause()");
 
-        if (mJsonDataFile != null) {
+        if (mPasswordsDropboxDataFile != null) {
             // stop listening for json data file changes
             stopListeningForChanges();
         }
@@ -566,7 +591,6 @@ public class MainActivity extends FragmentActivity {
                 btnLinkToDropbox.setVisibility(View.GONE);
             }
 
-            //mActivePasswordItemID = MySettings.getActivePasswordItemID();
             try {
                 dbxFs = DbxFileSystem.forAccount(mDbxAcctMgr.getLinkedAccount());
                 mJsonDataFileListener = new DbxFile.Listener() {
@@ -574,12 +598,12 @@ public class MainActivity extends FragmentActivity {
                     public void onFileChange(DbxFile dbxFile) {
                         MyLog.d("MainActivity", "onFileChange");
                         try {
-                            DbxFileStatus status = mJsonDataFile.getNewerStatus();
+                            DbxFileStatus status = mPasswordsDropboxDataFile.getNewerStatus();
                             MyLog.i("MainActivity", "onFileChange: Newer status: " + status);
 
                             if (status != null && status.isCached) {
-                                mJsonDataFile.update();
-                                MyLog.i("MainActivity", "onFileChange: mJsonDataFile.update()");
+                                mPasswordsDropboxDataFile.update();
+                                MyLog.i("MainActivity", "onFileChange: mPasswordsDropboxDataFile.update()");
                                 new readLabPasswordData().execute();
                             }
                         } catch (DbxException e) {
@@ -614,6 +638,34 @@ public class MainActivity extends FragmentActivity {
         }
     }
 
+    private void validateActiveUser() {
+        boolean userIsValid = false;
+        int activeUserID = MySettings.getActiveUserID();
+
+        // check that the active user ID is in the database
+        if (mPasswordsData != null && mPasswordsData.getUsers() != null) {
+            for (clsUsers user : mPasswordsData.getUsers()) {
+                if (user.getUserID() == activeUserID) {
+                    // found the user
+                    userIsValid = true;
+                    break;
+                }
+            }
+            if (!userIsValid) {
+                // the active user is not in the database
+                if (mPasswordsData.getUsers().size() > 0) {
+                    // users exist in the database... set active user to the first user
+                    MySettings.setActiveUserID(mPasswordsData.getUsers().get(0).getUserID());
+                } else {
+                    // there are no users in the database ... ask that one be created
+                    String title = getString(R.string.noUsersExist_dialog_title);
+                    String message = getString(R.string.noUsersExist_dialog_message);
+                    MainActivity.showOkDialog(this, title, message);
+                }
+            }
+        }
+    }
+
     private int openJsonDataFile() {
         int result = OPEN_FILE_RESULT_FAIL;
         if (dbxFs == null) {
@@ -638,21 +690,21 @@ public class MainActivity extends FragmentActivity {
 
             // check for the dropbox file
             DbxPath filePath = new DbxPath(MySettings.getDropboxFilename());
-            if (mJsonDataFile != null) {
-                mJsonDataFile.close();
-                mJsonDataFile = null;
+            if (mPasswordsDropboxDataFile != null) {
+                mPasswordsDropboxDataFile.close();
+                mPasswordsDropboxDataFile = null;
             }
             if (dbxFs.isFile(filePath)) {
-                mJsonDataFile = dbxFs.open(filePath);
-                if (mJsonDataFile == null) {
-                    MyLog.e("MainActivity", "openJsonDataFile FAILED. mJsonDataFile == null");
+                mPasswordsDropboxDataFile = dbxFs.open(filePath);
+                if (mPasswordsDropboxDataFile == null) {
+                    MyLog.e("MainActivity", "openJsonDataFile FAILED. mPasswordsDropboxDataFile == null");
                     return result;
                 }
             } else {
                 MyLog.i("MainActivity", "openJsonDataFile: JSON file does not exist... creating file.");
-                mJsonDataFile = dbxFs.create(filePath);
+                mPasswordsDropboxDataFile = dbxFs.create(filePath);
             }
-            if (mJsonDataFile != null) {
+            if (mPasswordsDropboxDataFile != null) {
                 result = OPEN_FILE_RESULT_SUCCESS;
             }
 
@@ -682,13 +734,13 @@ public class MainActivity extends FragmentActivity {
         int result = DOWNLOAD_RESULT_FAIL_READING_ENCRYPTED_FILE;
         String encryptedContents = "";
         try {
-            if (mJsonDataFile == null) {
-                MyLog.e("MainActivity", "readData FAILED. mJsonDataFile == null");
+            if (mPasswordsDropboxDataFile == null) {
+                MyLog.e("MainActivity", "readData FAILED. mPasswordsDropboxDataFile == null");
                 return result;
             }
 
-            MyLog.d("MainActivity", "readData: mJsonDataFile.getSyncStatus = " + mJsonDataFile.getSyncStatus());
-            encryptedContents = mJsonDataFile.readString();
+            MyLog.d("MainActivity", "readData: mPasswordsDropboxDataFile.getSyncStatus = " + mPasswordsDropboxDataFile.getSyncStatus());
+            encryptedContents = mPasswordsDropboxDataFile.readString();
 
         } catch (IOException e) {
             MyLog.e("MainActivity", "readData; IOException");
@@ -702,8 +754,12 @@ public class MainActivity extends FragmentActivity {
             try {
                 CryptLib mCrypt = new CryptLib();
                 String key = MySettings.Credentials.getKey();
-                String iv = MySettings.Credentials.getIV();
-                decryptedContents = mCrypt.decrypt(encryptedContents, key, iv);
+
+                String iv = encryptedContents.substring(0, 16);
+                String encryptedContentsWithoutIv = encryptedContents.substring(16);
+
+                //String iv = MySettings.Credentials.getIV();
+                decryptedContents = mCrypt.decrypt(encryptedContentsWithoutIv, key, iv);
                 if (decryptedContents.length() > 0) {
                     result = DOWNLOAD_RESULT_FAIL_PARSING_JSON;
                 }
@@ -742,6 +798,7 @@ public class MainActivity extends FragmentActivity {
                     e.printStackTrace();
                 }
                 if (mPasswordsData != null) {
+                    backupPasswordsDataFile();
                     sortPasswordsData();
                     int numberOfItems = mPasswordsData.getPasswordItems().size();
                     int numberOfUsers = mPasswordsData.getUsers().size();
@@ -766,6 +823,7 @@ public class MainActivity extends FragmentActivity {
                     }
 
                     mLastPasswordItemID = lastPasswordItemID;
+                    validateActiveUser();
                     result = DOWNLOAD_RESULT_SUCCESS;
 
                 } else {
@@ -780,20 +838,71 @@ public class MainActivity extends FragmentActivity {
         return result;
     }
 
+    private void backupPasswordsDataFile() {
+        if (needsBackingUp()) {
+            MyLog.i("MainActivity", "backupPasswordsDataFile: file backup starting");
+            String sourceBackupFilename = "";
+            String destinationBackupFilename = "";
+            for (int i = MySettings.MAX_NUMBER_OF_BACKUP_FILES; i > 0; i--) {
+                destinationBackupFilename = getPasswordsDataBackupFilename(i);
+                if (i == 1) {
+                    clsFormattingMethods.FileCopy(dbxFs, mPasswordsDropboxDataFile, destinationBackupFilename, false);
+                } else {
+                    sourceBackupFilename = getPasswordsDataBackupFilename(i - 1);
+                    clsFormattingMethods.FileCopy(dbxFs, sourceBackupFilename, destinationBackupFilename);
+                }
+            }
+
+            try {
+                DbxFileInfo passwordsFileInfo = mPasswordsDropboxDataFile.getInfo();
+                String msg = "Passwords file: " + MySettings.DROPBOX_FILENAME + " size = " + passwordsFileInfo.size;
+                MyLog.i("MainActivity", "backupPasswordsDataFile: " + msg);
+            } catch (DbxException e) {
+                MyLog.e("MainActivity", "backupPasswordsDataFile: " + e.getMessage());
+                e.printStackTrace();
+            }
+
+        }else{
+            MyLog.i("MainActivity", "backupPasswordsDataFile: Backup NOT NEEDED.");
+        }
+    }
+
+    private boolean needsBackingUp() {
+        boolean passwordsFileNeedsBackingUp = true;
+
+        // compare the Passwords file with bk1
+        // if the two files are the same, you don't need to backup the Passwords data file
+        passwordsFileNeedsBackingUp = !clsFormattingMethods.FileCompare(dbxFs,
+                mPasswordsDropboxDataFile, getPasswordsDataBackupFilename(1));
+
+
+        return passwordsFileNeedsBackingUp;
+    }
+
+    private String getPasswordsDataBackupFilename(int version) {
+        StringBuilder backupFilename = new StringBuilder();
+        backupFilename.append("bk").append(version).append(".").append(MySettings.DROPBOX_FILENAME);
+        String backupFullFilename = MySettings.getDropboxFolderName() + "/" + backupFilename.toString();
+        return backupFullFilename;
+    }
+
     private long saveEncryptedData() {
         long fileSize = 0;
         // Create JSON file string
         Gson gson = new Gson();
         String jsonFileString = gson.toJson(mPasswordsData, clsLabPasswords.class);
         // MyLog.d("MainActivity", "saveEncryptedData: plain text string length = " + jsonFileString.length());
-        String encryptedJsonFileString = "";
+        String encryptedPasswordsFileString = "";
 
         // Encrypt JSON file string
         CryptLib mCrypt = null;
         try {
             mCrypt = new CryptLib();
-            encryptedJsonFileString = mCrypt.encrypt(jsonFileString,
-                    MySettings.Credentials.getKey(), MySettings.Credentials.getIV());
+            String iv = CryptLib.generateRandomIV(16);
+            encryptedPasswordsFileString = mCrypt.encrypt(jsonFileString,
+                    MySettings.Credentials.getKey(), iv);
+
+            encryptedPasswordsFileString = iv + encryptedPasswordsFileString;
             // MyLog.d("MainActivity", "saveEncryptedData: encrypted text string length = " + encryptedJsonFileString.length());
 
         } catch (NoSuchAlgorithmException e) {
@@ -821,7 +930,7 @@ public class MainActivity extends FragmentActivity {
 
         // Save encrypted JSON file string to Dropbox
 
-        if (!encryptedJsonFileString.isEmpty()) {
+        if (!encryptedPasswordsFileString.isEmpty()) {
                 /*String filePathString = MySettings.getDropboxFolderName();
                 DbxPath filePath = new DbxPath(filePathString);
                 filePath = new DbxPath(filePath, "encryptedTest.txt");*/
@@ -830,18 +939,18 @@ public class MainActivity extends FragmentActivity {
             DbxPath filePath = new DbxPath(filePathString);
 
 
-            if (mJsonDataFile != null) {
+            if (mPasswordsDropboxDataFile != null) {
                 // you're going to change the json data file ...
                 // so temporarily stop listening for changes.
                 stopListeningForChanges();
                 try {
                     // write the file
-                    mJsonDataFile.writeString(encryptedJsonFileString);
+                    mPasswordsDropboxDataFile.writeString(encryptedPasswordsFileString);
                     DbxFileInfo fileInfo = dbxFs.getFileInfo(filePath);
                     fileSize = fileInfo.size;
                     MyLog.i("MainActivity", "saveEncryptedData: encrypted file SAVED. File size = " + fileSize);
 
-                    DbxFileStatus status = mJsonDataFile.getSyncStatus();
+                    DbxFileStatus status = mPasswordsDropboxDataFile.getSyncStatus();
                     if (!status.isLatest) {
                         // There must have been a change while writing the file
                         // so read the latest file
@@ -851,9 +960,11 @@ public class MainActivity extends FragmentActivity {
                         readData();
                     }
                 } catch (DbxException e) {
-                    MyLog.e("MainActivity", "saveEncryptedData; DbxException");
+                    MyLog.e("MainActivity", "saveEncryptedData; DbxException: " + e.getMessage());
+                    e.printStackTrace();
                 } catch (Exception e) {
-                    MyLog.e("MainActivity", "saveEncryptedData; Exception");
+                    MyLog.e("MainActivity", "saveEncryptedData; Exception: " + e.getMessage());
+                    e.printStackTrace();
                 }
                 // resume listening for changes
                 startListeningForChanges();
@@ -864,14 +975,14 @@ public class MainActivity extends FragmentActivity {
     }
 
     public static void stopListeningForChanges() {
-        if (mJsonDataFile != null) {
-            mJsonDataFile.removeListener(mJsonDataFileListener);
+        if (mPasswordsDropboxDataFile != null) {
+            mPasswordsDropboxDataFile.removeListener(mJsonDataFileListener);
         }
     }
 
     public static void startListeningForChanges() {
-        if (mJsonDataFile != null) {
-            mJsonDataFile.addListener(mJsonDataFileListener);
+        if (mPasswordsDropboxDataFile != null) {
+            mPasswordsDropboxDataFile.addListener(mJsonDataFileListener);
         }
     }
 
