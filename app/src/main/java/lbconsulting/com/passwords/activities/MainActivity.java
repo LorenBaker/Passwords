@@ -747,14 +747,13 @@ public class MainActivity extends FragmentActivity {
             e.printStackTrace();
         }
 
+        String key = MySettings.Credentials.getKey();
         if (!encryptedContents.isEmpty()) {
             result = DOWNLOAD_RESULT_FAIL_DECRYPTING_FILE;
             MyLog.i("MainActivity", "readData: encryptedContents length = " + encryptedContents.length());
             String decryptedContents = "";
             try {
                 CryptLib mCrypt = new CryptLib();
-                String key = MySettings.Credentials.getKey();
-
                 String iv = encryptedContents.substring(0, 16);
                 String encryptedContentsWithoutIv = encryptedContents.substring(16);
 
@@ -790,6 +789,7 @@ public class MainActivity extends FragmentActivity {
             if (!decryptedContents.isEmpty()) {
                 decryptedContents = decryptedContents.trim();
                 MyLog.i("MainActivity", "readData: trimmed decryptedContents length = " + decryptedContents.length());
+
                 Gson gson = new Gson();
                 try {
                     mPasswordsData = gson.fromJson(decryptedContents, clsLabPasswords.class);
@@ -798,14 +798,8 @@ public class MainActivity extends FragmentActivity {
                     e.printStackTrace();
                 }
                 if (mPasswordsData != null) {
-                    backupPasswordsDataFile();
                     sortPasswordsData();
-                    int numberOfItems = mPasswordsData.getPasswordItems().size();
-                    int numberOfUsers = mPasswordsData.getUsers().size();
-                    //int numberOfItemTypes = mPasswordsData.getItemTypes().size();
-                    MyLog.d("MainActivity", "readData COMPLETE. "
-                            + numberOfItems + " PasswordItems; "
-                            + numberOfUsers + " Users");
+                    backupPasswordsDataFile(key);
 
                     int lastUserID = -1;
                     for (clsUsers user : mPasswordsData.getUsers()) {
@@ -838,8 +832,8 @@ public class MainActivity extends FragmentActivity {
         return result;
     }
 
-    private void backupPasswordsDataFile() {
-        if (needsBackingUp()) {
+    private void backupPasswordsDataFile(String key) {
+        if (needsBackingUp(key)) {
             MyLog.i("MainActivity", "backupPasswordsDataFile: file backup starting");
             String sourceBackupFilename = "";
             String destinationBackupFilename = "";
@@ -862,21 +856,16 @@ public class MainActivity extends FragmentActivity {
                 e.printStackTrace();
             }
 
-        }else{
+        } else {
             MyLog.i("MainActivity", "backupPasswordsDataFile: Backup NOT NEEDED.");
         }
     }
 
-    private boolean needsBackingUp() {
-        boolean passwordsFileNeedsBackingUp = true;
-
-        // compare the Passwords file with bk1
+    private boolean needsBackingUp(String key) {
+        // compare the decrypted Passwords file with decrypted bk1 file
         // if the two files are the same, you don't need to backup the Passwords data file
-        passwordsFileNeedsBackingUp = !clsFormattingMethods.FileCompare(dbxFs,
-                mPasswordsDropboxDataFile, getPasswordsDataBackupFilename(1));
-
-
-        return passwordsFileNeedsBackingUp;
+        return !clsFormattingMethods.passwordsFileCompare(dbxFs, key,
+                mPasswordsData, getPasswordsDataBackupFilename(1));
     }
 
     private String getPasswordsDataBackupFilename(int version) {
@@ -1192,21 +1181,38 @@ public class MainActivity extends FragmentActivity {
         }
     }
 
-    private static class sortPasswordItems implements Comparator {
+    public static class sortPasswordItems implements Comparator {
         @Override
         public int compare(Object obj1, Object obj2) {
             clsPasswordItem item1 = (clsPasswordItem) obj1;
             clsPasswordItem item2 = (clsPasswordItem) obj2;
-            return item1.getName().compareToIgnoreCase(item2.getName());
+
+            // sort first by name
+            int result = item1.getName().compareToIgnoreCase(item2.getName());
+
+            if (result == 0) {
+                // sort second by ID
+                result = item1.getID() - item2.getID();
+            }
+
+            return result;
         }
     }
 
-    private static class sortUsers implements Comparator {
+    public static class sortUsers implements Comparator {
         @Override
         public int compare(Object obj1, Object obj2) {
             clsUsers user1 = (clsUsers) obj1;
             clsUsers user2 = (clsUsers) obj2;
-            return user1.getUserName().compareToIgnoreCase(user2.getUserName());
+            // sort first by name
+            int result = user1.getUserName().compareToIgnoreCase(user2.getUserName());
+
+            if (result == 0) {
+                // sort second by ID
+                result = user1.getUserID() - user2.getUserID();
+            }
+
+            return result;
         }
     }
 

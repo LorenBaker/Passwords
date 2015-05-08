@@ -140,7 +140,7 @@ public class AppPasswordFragment extends Fragment implements View.OnClickListene
 
     private void updateUI() {
         // TODO: Remove "Test Password"
-        //txtAppPassword.setText("GoBeavers1972");
+        txtAppPassword.setText("GoBeavers1972");
         showButtonText();
 
         switch (mState) {

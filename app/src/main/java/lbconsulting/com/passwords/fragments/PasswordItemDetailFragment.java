@@ -38,6 +38,7 @@ public class PasswordItemDetailFragment extends Fragment implements View.OnClick
 
     private clsPasswordItem mPasswordItem;
     private boolean mIsDirty = false;
+    private boolean mTextChangedListenersEnabled = false;
 
     private Button btnCallAlternate;
     private Button btnCallPrimary;
@@ -49,9 +50,8 @@ public class PasswordItemDetailFragment extends Fragment implements View.OnClick
     private ImageButton btnEditWebsite;
     private TextView tvItemDetail;
     private TextView tvPasswordItemName;
-    private TextView tvWebsiteDetail;
 
-    private TextWatcher mCommentsTextWatcher;
+    private TextView tvWebsiteDetail;
 
 
     public static PasswordItemDetailFragment newInstance() {
@@ -79,59 +79,62 @@ public class PasswordItemDetailFragment extends Fragment implements View.OnClick
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
-            MyLog.i("PasswordItemDetailFragment", "onCreateView()");
-            View rootView = inflater.inflate(R.layout.frag_password_item_detail, container, false);
+        MyLog.i("PasswordItemDetailFragment", "onCreateView()");
+        View rootView = inflater.inflate(R.layout.frag_password_item_detail, container, false);
 
-            btnCallAlternate = (Button) rootView.findViewById(R.id.btnCallAlternate);
-            btnCallPrimary = (Button) rootView.findViewById(R.id.btnCallPrimary);
-            btnCopyAccountNumber = (Button) rootView.findViewById(R.id.btnCopyAccountNumber);
-            btnCopyPassword = (Button) rootView.findViewById(R.id.btnCopyPassword);
-            btnGoToWebsite = (Button) rootView.findViewById(R.id.btnGoToWebsite);
-            btnEditItem = (ImageButton) rootView.findViewById(R.id.btnEditItem);
-            btnEditWebsite = (ImageButton) rootView.findViewById(R.id.btnEditWebsite);
+        btnCallAlternate = (Button) rootView.findViewById(R.id.btnCallAlternate);
+        btnCallPrimary = (Button) rootView.findViewById(R.id.btnCallPrimary);
+        btnCopyAccountNumber = (Button) rootView.findViewById(R.id.btnCopyAccountNumber);
+        btnCopyPassword = (Button) rootView.findViewById(R.id.btnCopyPassword);
+        btnGoToWebsite = (Button) rootView.findViewById(R.id.btnGoToWebsite);
+        btnEditItem = (ImageButton) rootView.findViewById(R.id.btnEditItem);
+        btnEditWebsite = (ImageButton) rootView.findViewById(R.id.btnEditWebsite);
 
-            btnCallAlternate.setOnClickListener(this);
-            btnCallPrimary.setOnClickListener(this);
-            btnCopyAccountNumber.setOnClickListener(this);
-            btnCopyPassword.setOnClickListener(this);
-            btnGoToWebsite.setOnClickListener(this);
-            btnEditItem.setOnClickListener(this);
-            btnEditWebsite.setOnClickListener(this);
+        btnCallAlternate.setOnClickListener(this);
+        btnCallPrimary.setOnClickListener(this);
+        btnCopyAccountNumber.setOnClickListener(this);
+        btnCopyPassword.setOnClickListener(this);
+        btnGoToWebsite.setOnClickListener(this);
+        btnEditItem.setOnClickListener(this);
+        btnEditWebsite.setOnClickListener(this);
 
-            tvPasswordItemName = (TextView) rootView.findViewById(R.id.tvPasswordItemName);
-            tvItemDetail = (TextView) rootView.findViewById(R.id.tvItemDetail);
-            tvWebsiteDetail = (TextView) rootView.findViewById(R.id.tvWebsiteDetail);
-            txtComments = (EditText) rootView.findViewById(R.id.txtComments);
-            mCommentsTextWatcher = new TextWatcher() {
-                @Override
+        tvPasswordItemName = (TextView) rootView.findViewById(R.id.tvPasswordItemName);
+        tvItemDetail = (TextView) rootView.findViewById(R.id.tvItemDetail);
+        tvWebsiteDetail = (TextView) rootView.findViewById(R.id.tvWebsiteDetail);
+        txtComments = (EditText) rootView.findViewById(R.id.txtComments);
+        txtComments.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
 
-                public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+            }
 
-                }
-
-                @Override
-                public void onTextChanged(CharSequence s, int start, int before, int count) {
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+                if (mTextChangedListenersEnabled) {
+                    MyLog.i("PasswordItemDetailFragment", "onTextChanged: EditText = txtComments");
                     mIsDirty = true;
                 }
+            }
 
-                @Override
-                public void afterTextChanged(Editable s) {
+            @Override
+            public void afterTextChanged(Editable s) {
 
-                }
-            };
+            }
+        });
 
-            updateUI();
-            return rootView;
+
+       // updateUI();
+        return rootView;
 
     }
 
     private void updateUI() {
+        MyLog.i("PasswordItemDetailFragment", "updateUI");
+        // inhibit text change event when loading updating the UI.
+        mTextChangedListenersEnabled = false;
         mPasswordItem = MainActivity.getActivePasswordItem();
 
         if (mPasswordItem != null) {
-
-            // inhibit text change event when loading updating the UI.
-            txtComments.removeTextChangedListener(mCommentsTextWatcher);
 
             // fill the UI views
             tvPasswordItemName.setText(mPasswordItem.getName());
@@ -197,9 +200,7 @@ public class PasswordItemDetailFragment extends Fragment implements View.OnClick
                 btnCallPrimary.setVisibility(View.VISIBLE);
             }
 
-            //  mIsDirty = false;
-
-            txtComments.addTextChangedListener(mCommentsTextWatcher);
+            mTextChangedListenersEnabled = true;
         }
     }
 
@@ -207,7 +208,10 @@ public class PasswordItemDetailFragment extends Fragment implements View.OnClick
     public void onActivityCreated(@Nullable Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
         MyLog.i("PasswordItemDetailFragment", "onActivityCreated()");
-        getActivity().getActionBar().setDisplayHomeAsUpEnabled(true);
+        mTextChangedListenersEnabled = false;
+        if (getActivity().getActionBar() != null) {
+            getActivity().getActionBar().setDisplayHomeAsUpEnabled(true);
+        }
         MySettings.setOnSaveInstanceState(false);
     }
 
@@ -223,6 +227,7 @@ public class PasswordItemDetailFragment extends Fragment implements View.OnClick
         super.onResume();
         MyLog.i("PasswordItemDetailFragment", "onResume()");
         MySettings.setActiveFragmentID(MySettings.FRAG_ITEM_DETAIL);
+        updateUI();
     }
 
     public void onEvent(clsEvents.updateUI event) {
@@ -233,6 +238,8 @@ public class PasswordItemDetailFragment extends Fragment implements View.OnClick
 
     @Override
     public void onPause() {
+        mTextChangedListenersEnabled = false;
+        //txtComments.removeTextChangedListener(mCommentsTextWatcher);
         super.onPause();
         MyLog.i("PasswordItemDetailFragment", "onPause()");
         if (mIsDirty && mPasswordItem != null && txtComments != null) {
@@ -240,7 +247,9 @@ public class PasswordItemDetailFragment extends Fragment implements View.OnClick
             // save comment changes
             EventBus.getDefault().post(new clsEvents.saveChangesToDropbox());
         }
-        getActivity().getActionBar().setDisplayHomeAsUpEnabled(false);
+        if (getActivity().getActionBar() != null) {
+            getActivity().getActionBar().setDisplayHomeAsUpEnabled(false);
+        }
     }
 
     @Override
@@ -315,7 +324,7 @@ public class PasswordItemDetailFragment extends Fragment implements View.OnClick
         switch (v.getId()) {
             case R.id.btnCallAlternate:
                 String alternatePhoneNumber = mPasswordItem.getAlternatePhoneNumber();
-                if(!alternatePhoneNumber.isEmpty()) {
+                if (!alternatePhoneNumber.isEmpty()) {
                     Intent intent = new Intent(Intent.ACTION_CALL);
                     intent.setData(Uri.parse("tel:" + alternatePhoneNumber));
                     getActivity().startActivity(intent);
@@ -325,12 +334,12 @@ public class PasswordItemDetailFragment extends Fragment implements View.OnClick
 
             case R.id.btnCallPrimary:
                 String primaryPhoneNumber = mPasswordItem.getPrimaryPhoneNumber();
-                if(!primaryPhoneNumber.isEmpty()) {
+                if (!primaryPhoneNumber.isEmpty()) {
                     Intent intent = new Intent(Intent.ACTION_CALL);
                     intent.setData(Uri.parse("tel:" + primaryPhoneNumber));
                     getActivity().startActivity(intent);
                 }
-               // Toast.makeText(getActivity(), "TO COME: btnCallPrimary", Toast.LENGTH_SHORT).show();
+                // Toast.makeText(getActivity(), "TO COME: btnCallPrimary", Toast.LENGTH_SHORT).show();
                 break;
 
             case R.id.btnCopyAccountNumber:

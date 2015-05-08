@@ -7,16 +7,27 @@ import com.dropbox.sync.android.DbxFile;
 import com.dropbox.sync.android.DbxFileInfo;
 import com.dropbox.sync.android.DbxFileSystem;
 import com.dropbox.sync.android.DbxPath;
+import com.google.gson.Gson;
+import com.google.gson.JsonSyntaxException;
 
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
+import java.security.InvalidAlgorithmParameterException;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-/**
- * Created by Loren on 3/10/2015.
- */
+import javax.crypto.BadPaddingException;
+import javax.crypto.IllegalBlockSizeException;
+import javax.crypto.NoSuchPaddingException;
+
+import lbconsulting.com.passwords.activities.MainActivity;
+
 public class clsFormattingMethods {
 
     public static String unformatKeyCode(String keyCode) {
@@ -304,90 +315,192 @@ public class clsFormattingMethods {
         return formattedNumber;
     }
 
-    // This method accepts two strings the represent two files to
-    // compare. A returns true if the contents of the files
-    // are the same. A returns false if the files are not the same.
-    public static boolean FileCompare(DbxFileSystem dbxFs, DbxFile file1, String filename2) {
+    // This method compares the provided decrypted Passwords file clsLabPasswords content
+    // with the backup file clsLabPasswords content.
+    // Returns true if the decrypted contents of the files are the same.
+    // Returns false if the files are not the same.
+    public static boolean passwordsFileCompare(DbxFileSystem dbxFs, String key, clsLabPasswords passwordsObject, String backupFilename) {
 
+        String backupFileEncryptedContents;
         try {
-            // check for the dropbox file
-            DbxPath file2Path = new DbxPath(filename2);
-
-            if (!dbxFs.isFile(file2Path)) {
-                MyLog.e("clsFormattingMethods", "FileCompare: Source file: " + filename2 + " not found.");
+            // verify that the backup file exists ... if not, return false
+            DbxPath backupFilenamePath = new DbxPath(backupFilename);
+            if (!dbxFs.isFile(backupFilenamePath)) {
+                MyLog.i("clsFormattingMethods", "passwordsFileCompare: " + backupFilename + " file not found... returning false");
                 return false;
             }
 
-            // Open file2
-            DbxFile file2 = dbxFs.open(file2Path);
+            // Open the backup file
+            DbxFile backupFile;
+            backupFile = dbxFs.open(backupFilenamePath);
 
-            if (file1 != null && file2 != null) {
-                DbxFileInfo file1Info = file1.getInfo();
-                DbxFileInfo file2Info = file2.getInfo();
-                MyLog.d("clsFormattingMethods", "FileCompare: file1 size = "+file1Info.size +" ;file " + filename2 + " size = " +file2Info.size);
-
-                // Check the file sizes. If they are not the same, the files
-                // are not the same.
-                if (file1Info.size != file2Info.size) {
-                    // Close file2
-                    if (file2 != null) {
-                        file2.close();
-                    }
-
-                    // Return false to indicate files are different
-                    return false;
-                }
-
-                // Read and compare a byte from each file until either a
-                // non-matching set of bytes is found or until the end of
-                // file1 is reached.
-                FileInputStream file1Stream = file1.getReadStream();
-                FileInputStream file2Stream = file2.getReadStream();
-                int read = -1;
-                byte[] file1Buffer = new byte[1];
-                byte[] file2Buffer = new byte[1];
-                boolean result = true;
-                int position =0;
-                while ((read = file1Stream.read(file1Buffer)) != -1) {
-                    file2Stream.read(file2Buffer);
-                    if (file1Buffer[0] != file2Buffer[0]) {
-                        MyLog.d("clsFormattingMethods", "FileCompare: Bytes not equal at position = " + position);
-                        result = false;
-                        break;
-                    }
-                    position++;
-                }
-
-                // close the file streams
-                file1Stream.close();
-                file2Stream.close();
-
-                // close file2 ... file1 stays open, it is the Passwords data file
-
-                if (file2 != null) {
-                    file2.close();
-                }
-
-                if (result) {
-                    result = ((file1Buffer[0] == file2Buffer[0]));
-                }
-                MyLog.d("clsFormattingMethods", "FileCompare: files the same: " + result);
-                return result;
-
-            } else {
-                MyLog.e("clsFormattingMethods", "FileCompare: unable to open one or both files!");
+            // Read the backup file
+            if (backupFile == null) {
+                // Unable to open the backup file ... return false
+                MyLog.e("clsFormattingMethods", "passwordsFileCompare: Unable to open the backup file... returning false");
                 return false;
             }
-        } catch (DbxException e) {
-            MyLog.e("clsFormattingMethods", "FileCompare: DbxException: " + e.toString());
-            e.printStackTrace();
-            return false;
+            backupFileEncryptedContents = backupFile.readString();
+            backupFile.close();
 
         } catch (IOException e) {
-            MyLog.e("clsFormattingMethods", "FileCompare: IOException: " + e.toString());
+            MyLog.e("clsFormattingMethods", "passwordsFileCompare: IOException: " + e.getMessage());
             e.printStackTrace();
             return false;
         }
+
+        // Decrypt the backup file
+        if (backupFileEncryptedContents.isEmpty()) {
+            // there is nothing to decrypt .... return false
+            MyLog.e("clsFormattingMethods", "passwordsFileCompare: backup file encrypted content is empty... returning false");
+            return false;
+        }
+        String decryptedBackupFileContents;
+        try {
+            CryptLib mCrypt = new CryptLib();
+            String iv = backupFileEncryptedContents.substring(0, 16);
+            String encryptedBackupFileContentsWithoutIv = backupFileEncryptedContents.substring(16);
+            decryptedBackupFileContents = mCrypt.decrypt(encryptedBackupFileContentsWithoutIv, key, iv);
+            decryptedBackupFileContents = decryptedBackupFileContents.trim();
+
+        } catch (NoSuchAlgorithmException e) {
+            MyLog.e("clsFormattingMethods", "passwordsFileCompare: NoSuchAlgorithmException: " + e.getMessage());
+            e.printStackTrace();
+            return false;
+        } catch (NoSuchPaddingException e) {
+            MyLog.e("clsFormattingMethods", "passwordsFileCompare: NoSuchPaddingException: " + e.getMessage());
+            e.printStackTrace();
+            return false;
+        } catch (InvalidKeyException e) {
+            MyLog.e("clsFormattingMethods", "passwordsFileCompare: InvalidKeyException: " + e.getMessage());
+            e.printStackTrace();
+            return false;
+        } catch (InvalidAlgorithmParameterException e) {
+            MyLog.e("clsFormattingMethods", "passwordsFileCompare: InvalidAlgorithmParameterException: " + e.getMessage());
+            e.printStackTrace();
+            return false;
+        } catch (IllegalBlockSizeException e) {
+            MyLog.e("clsFormattingMethods", "passwordsFileCompare: IllegalBlockSizeException: " + e.getMessage());
+            e.printStackTrace();
+            return false;
+        } catch (BadPaddingException e) {
+            MyLog.e("clsFormattingMethods", "passwordsFileCompare: BadPaddingException: " + e.getMessage());
+            e.printStackTrace();
+            return false;
+        } catch (UnsupportedEncodingException e) {
+            MyLog.e("clsFormattingMethods", "passwordsFileCompare: UnsupportedEncodingException: " + e.getMessage());
+            e.printStackTrace();
+            return false;
+        }
+
+        // Create clsLabPasswords object from the backup file
+        Gson gson = new Gson();
+        clsLabPasswords backupFilePasswordsObject = null;
+        try {
+            backupFilePasswordsObject = gson.fromJson(decryptedBackupFileContents, clsLabPasswords.class);
+        } catch (JsonSyntaxException e) {
+            MyLog.e("clsFormattingMethods", "passwordsFileCompare: JsonSyntaxException: " + e.getMessage());
+            e.printStackTrace();
+        }
+
+        boolean result = false;
+        if (passwordsObject != null && backupFilePasswordsObject != null) {
+            // Sort the backup file object
+            if (backupFilePasswordsObject.getPasswordItems().size() > 0) {
+                Collections.sort(backupFilePasswordsObject.getPasswordItems(), new MainActivity.sortPasswordItems());
+            }
+
+            if (backupFilePasswordsObject.getUsers().size() > 0) {
+                Collections.sort(backupFilePasswordsObject.getUsers(), new MainActivity.sortUsers());
+            }
+
+            // Compare the password items size
+            if (passwordsObject.getPasswordItems().size() == backupFilePasswordsObject.getPasswordItems().size()) {
+                // Compare the users items size
+                if (passwordsObject.getUsers().size() == passwordsObject.getUsers().size()) {
+                    // Compare the user lists
+                    if (compareUsers(passwordsObject.getUsers(), passwordsObject.getUsers())) {
+                        // Compare the password item lists
+                        result = comparePasswordItems(passwordsObject.getPasswordItems(), backupFilePasswordsObject.getPasswordItems());
+                    }
+                }
+            }
+        }
+
+        MyLog.i("clsFormattingMethods", "passwordsFileCompare result = " + result);
+        return result;
+    }
+
+
+    private static boolean comparePasswordItems(ArrayList<clsPasswordItem> passwordsItemsList1,
+                                                ArrayList<clsPasswordItem> passwordsItemsList2) {
+        boolean result = false;
+        int index = 0;
+
+        for (clsPasswordItem item1 : passwordsItemsList1) {
+            clsPasswordItem item2 = passwordsItemsList2.get(index);
+            if (item1.getID() != item2.getID()) {
+                MyLog.e("clsFormattingMethods", "comparePasswordItems: password item IDs are NOT the same! index = "
+                        + index + "; item1 ID = " + item1.getID() + "; item2 ID = " +item2.getID()
+                        + "; item1 Name = " + item1.getName() + "; item 2 Name = " +item2.getName());
+                break;
+            }
+
+            if (!item1.getAlternatePhoneNumber().equals(item2.getAlternatePhoneNumber())) break;
+            if (!item1.getComments().equals(item2.getComments())) break;
+            if (!item1.getCreditCardAccountNumber().equals(item2.getCreditCardAccountNumber()))
+                break;
+            if (!item1.getCreditCardExpirationMonth().equals(item2.getCreditCardExpirationMonth()))
+                break;
+            if (!item1.getCreditCardExpirationYear().equals(item2.getCreditCardExpirationYear()))
+                break;
+            if (!item1.getCardCreditSecurityCode().equals(item2.getCardCreditSecurityCode())) break;
+            if (!item1.getGeneralAccountNumber().equals(item2.getGeneralAccountNumber())) break;
+            if (item1.getItemType_ID() != item2.getItemType_ID()) break;
+            if (!item1.getName().equals(item2.getName())) break;
+            if (!item1.getPrimaryPhoneNumber().equals(item2.getPrimaryPhoneNumber())) break;
+            if (!item1.getSoftwareKeyCode().equals(item2.getSoftwareKeyCode())) break;
+            if (item1.getSoftwareSubgroupLength() != item2.getSoftwareSubgroupLength()) break;
+            if (item1.getUser_ID() != item2.getUser_ID()) break;
+            if (!item1.getWebsitePassword().equals(item2.getWebsitePassword())) break;
+            if (!item1.getWebsiteURL().equals(item2.getWebsiteURL())) break;
+            if (!item1.getWebsiteUserID().equals(item2.getWebsiteUserID())) break;
+
+            index++;
+        }
+
+        if (index == passwordsItemsList1.size()) {
+            // All password items examined. The two password item lists are the same.
+            result = true;
+        }
+        return result;
+    }
+
+
+    private static boolean compareUsers(ArrayList<clsUsers> userList1,
+                                        ArrayList<clsUsers> userList2) {
+        boolean result = false;
+        int index = 0;
+
+        for (clsUsers user1 : userList1) {
+            clsUsers user2 = userList2.get(index);
+            if (user1.getUserID() != user2.getUserID()) {
+                MyLog.e("clsFormattingMethods", "compareUsers: user IDs are NOT the same!");
+                break;
+            }
+
+            if (!user1.getUserName().equals(user2.getUserName())) {
+                break;
+            }
+            index++;
+        }
+
+        if (index == userList1.size()) {
+            // All users examined. The two user lists are the same.
+            result = true;
+        }
+        return result;
+
     }
 
     public static boolean FileCopy(DbxFileSystem dbxFs, String sourceFilename, String destinationFilename) {

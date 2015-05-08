@@ -33,7 +33,7 @@ import lbconsulting.com.passwords.classes.clsPasswordItem;
 /**
  * A fragment that allows the editing of a Credit Card
  */
-public class EditCreditCardFragment extends Fragment {
+public class EditCreditCardFragment extends Fragment implements TextWatcher {
 
     private static final String ARG_IS_DIRTY = "isDirty";
     private static final String ARG_ACTIVE_CARD_TYPE = "activeCardType";
@@ -70,6 +70,8 @@ public class EditCreditCardFragment extends Fragment {
     private EditText txtSecurityCode;
     private EditText txtPrimaryPhoneNumber;
     private EditText txtAlternatePhoneNumber;
+
+    private boolean mTextChangedListenersEnabled = false;
 
 
     private class CreditCardParts {
@@ -217,24 +219,7 @@ public class EditCreditCardFragment extends Fragment {
                 }
             }
         });
-
-        txtItemName.addTextChangedListener(new TextWatcher() {
-
-            @Override
-            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
-
-            }
-
-            @Override
-            public void onTextChanged(CharSequence s, int start, int before, int count) {
-                mIsItemNameDirty = true;
-            }
-
-            @Override
-            public void afterTextChanged(Editable s) {
-
-            }
-        });
+        txtItemName.addTextChangedListener(this);
 
         spnCreditCardType = (Spinner) rootView.findViewById(R.id.spnCreditCardType);
         final ArrayAdapter<String> dataAdapter = new ArrayAdapter<String>(getActivity(),
@@ -288,7 +273,9 @@ public class EditCreditCardFragment extends Fragment {
                         tvSpacer3.setVisibility(View.VISIBLE);
                         break;
                 }
+                mTextChangedListenersEnabled = false;
                 updateCreditCardUI();
+                mTextChangedListenersEnabled = true;
             }
 
             @Override
@@ -299,153 +286,28 @@ public class EditCreditCardFragment extends Fragment {
 
 
         txtCreditCardPart1 = (EditText) rootView.findViewById(R.id.txtCreditCardPart1);
-        txtCreditCardPart1.addTextChangedListener(new TextWatcher() {
+        txtCreditCardPart1.addTextChangedListener(this);
 
-            @Override
-            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
-
-            }
-
-            @Override
-            public void onTextChanged(CharSequence s, int start, int before, int count) {
-                mIsDirty = true;
-            }
-
-            @Override
-            public void afterTextChanged(Editable s) {
-                validateCreditCard();
-                if (s.length() >= maxLengthCardPart1) {
-                    txtCreditCardPart2.requestFocus();
-                }
-
-            }
-        });
         txtCreditCardPart2 = (EditText) rootView.findViewById(R.id.txtCreditCardPart2);
-        txtCreditCardPart2.addTextChangedListener(new TextWatcher() {
+        txtCreditCardPart2.addTextChangedListener(this);
 
-            @Override
-            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
-
-            }
-
-            @Override
-            public void onTextChanged(CharSequence s, int start, int before, int count) {
-                mIsDirty = true;
-            }
-
-            @Override
-            public void afterTextChanged(Editable s) {
-                validateCreditCard();
-                if (s.length() >= maxLengthCardPart2) {
-                    txtCreditCardPart3.requestFocus();
-                }
-            }
-        });
         txtCreditCardPart3 = (EditText) rootView.findViewById(R.id.txtCreditCardPart3);
-        txtCreditCardPart3.addTextChangedListener(new TextWatcher() {
+        txtCreditCardPart3.addTextChangedListener(this);
 
-            @Override
-            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
-
-            }
-
-            @Override
-            public void onTextChanged(CharSequence s, int start, int before, int count) {
-                mIsDirty = true;
-            }
-
-            @Override
-            public void afterTextChanged(Editable s) {
-                validateCreditCard();
-                if (s.length() >= maxLengthCardPart3) {
-                    switch (mActiveCardType) {
-                        case MySettings.AMERICAN_EXPRESS:
-                        case MySettings.DINERS_CLUB:
-                            txtExpirationMonth.requestFocus();
-                            break;
-                        default:
-                            txtCreditCardPart4.requestFocus();
-                            break;
-                    }
-                }
-            }
-        });
         txtCreditCardPart4 = (EditText) rootView.findViewById(R.id.txtCreditCardPart4);
-        txtCreditCardPart4.addTextChangedListener(new TextWatcher() {
+        txtCreditCardPart4.addTextChangedListener(this);
 
-            @Override
-            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
-
-            }
-
-            @Override
-            public void onTextChanged(CharSequence s, int start, int before, int count) {
-                mIsDirty = true;
-            }
-
-            @Override
-            public void afterTextChanged(Editable s) {
-                validateCreditCard();
-                if (s.length() >= maxLengthCardPart4) {
-                    txtExpirationMonth.requestFocus();
-                }
-            }
-        });
         tvSpacer3 = (TextView) rootView.findViewById(R.id.tvSpacer3);
         ivCardVerification = (ImageView) rootView.findViewById(R.id.ivCardVerification);
         txtExpirationMonth = (EditText) rootView.findViewById(R.id.txtExpirationMonth);
-        txtExpirationMonth.addTextChangedListener(new TextWatcher() {
+        txtExpirationMonth.addTextChangedListener(this);
 
-            @Override
-            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
-
-            }
-
-            @Override
-            public void onTextChanged(CharSequence s, int start, int before, int count) {
-                mIsDirty = true;
-            }
-
-            @Override
-            public void afterTextChanged(Editable s) {
-
-            }
-        });
         txtExpirationYear = (EditText) rootView.findViewById(R.id.txtExpirationYear);
-        txtExpirationYear.addTextChangedListener(new TextWatcher() {
-            @Override
-            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+        txtExpirationYear.addTextChangedListener(this);
 
-            }
-
-            @Override
-            public void onTextChanged(CharSequence s, int start, int before, int count) {
-                mIsDirty = true;
-            }
-
-            @Override
-            public void afterTextChanged(Editable s) {
-
-            }
-        });
         txtSecurityCode = (EditText) rootView.findViewById(R.id.txtSecurityCode);
-        txtSecurityCode.addTextChangedListener(new TextWatcher() {
+        txtSecurityCode.addTextChangedListener(this);
 
-            @Override
-            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
-
-            }
-
-            @Override
-            public void onTextChanged(CharSequence s, int start, int before, int count) {
-                mIsDirty = true;
-            }
-
-            @Override
-            public void afterTextChanged(Editable s) {
-
-            }
-        });
         txtPrimaryPhoneNumber = (EditText) rootView.findViewById(R.id.txtPrimaryPhoneNumber);
         txtPrimaryPhoneNumber.setOnFocusChangeListener(new View.OnFocusChangeListener() {
 
@@ -458,22 +320,8 @@ public class EditCreditCardFragment extends Fragment {
                 }
             }
         });
-        txtPrimaryPhoneNumber.addTextChangedListener(new TextWatcher() {
-            @Override
-            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+        txtPrimaryPhoneNumber.addTextChangedListener(this);
 
-            }
-
-            @Override
-            public void onTextChanged(CharSequence s, int start, int before, int count) {
-                mIsDirty = true;
-            }
-
-            @Override
-            public void afterTextChanged(Editable s) {
-
-            }
-        });
         txtAlternatePhoneNumber = (EditText) rootView.findViewById(R.id.txtAlternatePhoneNumber);
         txtAlternatePhoneNumber.setOnFocusChangeListener(new View.OnFocusChangeListener() {
 
@@ -486,22 +334,8 @@ public class EditCreditCardFragment extends Fragment {
                 }
             }
         });
-        txtAlternatePhoneNumber.addTextChangedListener(new TextWatcher() {
-            @Override
-            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+        txtAlternatePhoneNumber.addTextChangedListener(this);
 
-            }
-
-            @Override
-            public void onTextChanged(CharSequence s, int start, int before, int count) {
-                mIsDirty = true;
-            }
-
-            @Override
-            public void afterTextChanged(Editable s) {
-
-            }
-        });
         return rootView;
     }
 
@@ -547,6 +381,7 @@ public class EditCreditCardFragment extends Fragment {
     public void onActivityCreated(@Nullable Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
         MyLog.i("EditCreditCardFragment", "onActivityCreated()");
+        mTextChangedListenersEnabled = false;
         // Restore saved state
         if (savedInstanceState != null) {
             MyLog.i("EditCreditCardFragment", "onActivityCreated(): savedInstanceState");
@@ -589,6 +424,7 @@ public class EditCreditCardFragment extends Fragment {
 
     private void updateUI() {
         if (!mIsDirty) {
+            mTextChangedListenersEnabled = false;
             mPasswordItem = MainActivity.getActivePasswordItem();
             if (mPasswordItem != null) {
                 txtItemName.setText(mPasswordItem.getName());
@@ -607,11 +443,13 @@ public class EditCreditCardFragment extends Fragment {
                 txtPrimaryPhoneNumber.setText(formattedPrimaryPhoneNumber);
                 txtAlternatePhoneNumber.setText(formattedAlternatePhoneNumber);
             }
+            mTextChangedListenersEnabled = true;
         }
     }
 
     private void updateCreditCardUI() {
         if (mPasswordItem != null) {
+
             CreditCardParts creditCardParts = new CreditCardParts(mPasswordItem.getCreditCardAccountNumber(), mSelectedCreditCardTypePosition);
             txtCreditCardPart1.setText(creditCardParts.getPart1());
             txtCreditCardPart2.setText(creditCardParts.getPart2());
@@ -722,12 +560,15 @@ public class EditCreditCardFragment extends Fragment {
 
     @Override
     public void onPause() {
+        mTextChangedListenersEnabled = false;
         super.onPause();
         MyLog.i("EditCreditCardFragment", "onPause()");
         if (mIsDirty) {
             updatePasswordItem();
         }
-        getActivity().getActionBar().setDisplayHomeAsUpEnabled(false);
+        if(getActivity().getActionBar()!=null) {
+            getActivity().getActionBar().setDisplayHomeAsUpEnabled(false);
+        }
     }
 
 
@@ -740,5 +581,45 @@ public class EditCreditCardFragment extends Fragment {
 
     }
 
+    @Override
+    public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+        //MyLog.d("EditCreditCardFragment", "beforeTextChanged");
+    }
 
+    @Override
+    public void onTextChanged(CharSequence s, int start, int before, int count) {
+
+        if (mTextChangedListenersEnabled) {
+            String editTextName = "";
+            if (txtItemName.getText().hashCode() == s.hashCode()) {
+                editTextName = "txtItemName";
+            } else if (txtCreditCardPart1.getText().hashCode() == s.hashCode()) {
+                editTextName = "txtCreditCardPart1";
+            } else if (txtCreditCardPart2.getText().hashCode() == s.hashCode()) {
+                editTextName = "txtCreditCardPart2";
+            } else if (txtCreditCardPart3.getText().hashCode() == s.hashCode()) {
+                editTextName = "txtCreditCardPart3";
+            } else if (txtCreditCardPart4.getText().hashCode() == s.hashCode()) {
+                editTextName = "txtCreditCardPart4";
+            } else if (txtExpirationMonth.getText().hashCode() == s.hashCode()) {
+                editTextName = "txtExpirationMonth";
+            } else if (txtExpirationYear.getText().hashCode() == s.hashCode()) {
+                editTextName = "txtExpirationYear";
+            } else if (txtSecurityCode.getText().hashCode() == s.hashCode()) {
+                editTextName = "txtSecurityCode";
+            } else if (txtPrimaryPhoneNumber.getText().hashCode() == s.hashCode()) {
+                editTextName = "txtPrimaryPhoneNumber";
+            } else if (txtAlternatePhoneNumber.getText().hashCode() == s.hashCode()) {
+                editTextName = "txtAlternatePhoneNumber";
+            }
+
+            MyLog.d("EditCreditCardFragment", "onTextChanged: EditText = " + editTextName);
+            mIsDirty = true;
+        }
+    }
+
+    @Override
+    public void afterTextChanged(Editable s) {
+        //MyLog.d("EditCreditCardFragment", "afterTextChanged");
+    }
 }
