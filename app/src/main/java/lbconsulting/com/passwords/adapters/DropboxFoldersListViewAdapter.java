@@ -53,7 +53,6 @@ public class DropboxFoldersListViewAdapter extends ArrayAdapter<clsDbxFolder> {
         // Populate the data into the template view using the data object
         viewHolder.tvFolderName.setText(record.toString());
         viewHolder.tvFolderName.setTag(record);
-        // TODO: change the color of folder icons to green
         if (record.getIconName().equals("folder_user")) {
             viewHolder.ivFolderIcon.setImageResource(R.drawable.ic_folder_user);
         } else if (record.getIconName().equals("N/A")) {

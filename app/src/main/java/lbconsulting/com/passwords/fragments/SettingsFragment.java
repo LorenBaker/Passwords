@@ -7,7 +7,9 @@ import android.content.DialogInterface;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
+import android.text.Editable;
 import android.text.InputType;
+import android.text.TextWatcher;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -15,6 +17,8 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
+import android.widget.ImageView;
+import android.widget.TextView;
 import android.widget.EditText;
 import android.widget.Toast;
 
@@ -38,12 +42,22 @@ public class SettingsFragment extends Fragment implements View.OnClickListener {
     private Button btnSelectUser;
     private Button btnUserSettings;
     private Button btnSelectPasswordLongevity;
+    private Button btnChangeAppPassword;
     private Button btnSelectDropboxFolder;
+
+    private EditText txtAppPassword;
+    private EditText txtConfirmAppPassword;
+    private Button btnSave;
+    private ImageView ivCheckMark;
+
+    private Button btnPasswordDisplay;
+    private Button btnConfirmPasswordDisplay;
+    private boolean mShowPasswordText = false;
+    private boolean mShowConfirmPasswordText = false;
 
 
     public static SettingsFragment newInstance() {
-        SettingsFragment fragment = new SettingsFragment();
-        return fragment;
+        return new SettingsFragment();
     }
 
     public SettingsFragment() {
@@ -66,11 +80,13 @@ public class SettingsFragment extends Fragment implements View.OnClickListener {
         btnSelectUser = (Button) rootView.findViewById(R.id.btnSelectUser);
         btnUserSettings = (Button) rootView.findViewById(R.id.btnUserSettings);
         btnSelectPasswordLongevity = (Button) rootView.findViewById(R.id.btnSelectPasswordLongevity);
+        btnChangeAppPassword = (Button) rootView.findViewById(R.id.btnChangeAppPassword);
         btnSelectDropboxFolder = (Button) rootView.findViewById(R.id.btnSelectDropboxFolder);
 
         btnSelectUser.setOnClickListener(this);
         btnUserSettings.setOnClickListener(this);
         btnSelectPasswordLongevity.setOnClickListener(this);
+        btnChangeAppPassword.setOnClickListener(this);
         btnSelectDropboxFolder.setOnClickListener(this);
 
         return rootView;
@@ -81,7 +97,9 @@ public class SettingsFragment extends Fragment implements View.OnClickListener {
     public void onActivityCreated(@Nullable Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
         MyLog.i("SettingsFragment", "onActivityCreated()");
-        getActivity().getActionBar().setDisplayHomeAsUpEnabled(true);
+        if (getActivity().getActionBar() != null) {
+            getActivity().getActionBar().setDisplayHomeAsUpEnabled(true);
+        }
         MySettings.setOnSaveInstanceState(false);
     }
 
@@ -121,7 +139,7 @@ public class SettingsFragment extends Fragment implements View.OnClickListener {
     }
 
     private String getLongevityDescription(int longevity) {
-        String description = "5 min";
+        String description;
         switch (longevity) {
             case 5:
                 description = "5 min";
@@ -176,7 +194,9 @@ public class SettingsFragment extends Fragment implements View.OnClickListener {
     public void onPause() {
         super.onPause();
         MyLog.i("SettingsFragment", "onPause()");
-        getActivity().getActionBar().setDisplayHomeAsUpEnabled(false);
+        if (getActivity().getActionBar() != null) {
+            getActivity().getActionBar().setDisplayHomeAsUpEnabled(false);
+        }
     }
 
 
@@ -220,8 +240,10 @@ public class SettingsFragment extends Fragment implements View.OnClickListener {
                     builder.setTitle("Select User");
                     builder.setSingleChoiceItems(names, selectedUserPosition, new DialogInterface.OnClickListener() {
                         public void onClick(DialogInterface dialog, int item) {
-                            mActiveUser = users.get(item);
-                            selectActiveUser(false);
+                            if (users != null) {
+                                mActiveUser = users.get(item);
+                            }
+                            selectActiveUser();
                             dialog.dismiss();
                         }
                     });
@@ -235,13 +257,12 @@ public class SettingsFragment extends Fragment implements View.OnClickListener {
                 break;
 
             case R.id.btnSelectPasswordLongevity:
-                // TODO: show current longevity on btnSelectPasswordLongevity
                 // Strings to Show In Dialog with Radio Buttons
                 final CharSequence[] items = {"None", "5 min", "15 min", "30 min", "1 hr", "4 hrs", "8 hrs"};
 
                 long passwordLongevity = MySettings.getPasswordLongevity();
                 int longevity = (int) passwordLongevity / 60000;
-                int selectedLongevityPosition = 0;
+                int selectedLongevityPosition;
                 switch (longevity) {
                     case 5:
                         selectedLongevityPosition = 1;
@@ -316,30 +337,150 @@ public class SettingsFragment extends Fragment implements View.OnClickListener {
                 break;
 
             case R.id.btnChangeAppPassword:
-                // TODO: implement Change App Password
-                Toast.makeText(getActivity(), "btnChangeAppPassword Clicked", Toast.LENGTH_SHORT).show();
+                // custom dialog
+                final Dialog changePasswordDialog = new Dialog(getActivity());
+                changePasswordDialog.setContentView(R.layout.dialog_app_change_password);
+                changePasswordDialog.setTitle("Change Password");
+
+                // set the custom dialog components - text, image and button
+                txtAppPassword = (EditText) changePasswordDialog.findViewById(R.id.txtAppPassword);
+                txtConfirmAppPassword = (EditText) changePasswordDialog.findViewById(R.id.txtConfirmAppPassword);
+                ivCheckMark = (ImageView) changePasswordDialog.findViewById(R.id.ivCheckMark);
+                ivCheckMark.setImageResource(R.drawable.btn_check_buttonless_off);
+
+                txtAppPassword.addTextChangedListener(new TextWatcher() {
+                    @Override
+                    public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+
+                    }
+
+                    @Override
+                    public void onTextChanged(CharSequence s, int start, int before, int count) {
+                        validatePasswordsAreTheSame();
+                    }
+
+                    @Override
+                    public void afterTextChanged(Editable s) {
+
+                    }
+                });
+
+                txtConfirmAppPassword.addTextChangedListener(new TextWatcher() {
+                    @Override
+                    public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+
+                    }
+
+                    @Override
+                    public void onTextChanged(CharSequence s, int start, int before, int count) {
+                        validatePasswordsAreTheSame();
+                    }
+
+                    @Override
+                    public void afterTextChanged(Editable s) {
+
+                    }
+                });
+
+                btnPasswordDisplay = (Button) changePasswordDialog.findViewById(R.id.btnPasswordDisplay);
+                btnConfirmPasswordDisplay = (Button) changePasswordDialog.findViewById(R.id.btnConfirmPasswordDisplay);
+
+                btnPasswordDisplay.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        if (mShowPasswordText) {
+                            txtAppPassword.setInputType(InputType.TYPE_CLASS_TEXT |
+                                    InputType.TYPE_TEXT_VARIATION_PASSWORD);
+
+                            btnPasswordDisplay.setText(getString(R.string.btnDisplay_setText_Display));
+                        } else {
+                            txtAppPassword.setInputType(InputType.TYPE_CLASS_TEXT |
+                                    InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD);
+                            btnPasswordDisplay.setText(getString(R.string.btnDisplay_setText_Hide));
+                        }
+                        txtAppPassword.setSelection(txtAppPassword.getText().length());
+                        mShowPasswordText = !mShowPasswordText;
+                    }
+                });
+
+                btnConfirmPasswordDisplay.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        if (mShowConfirmPasswordText) {
+                            txtConfirmAppPassword.setInputType(InputType.TYPE_CLASS_TEXT |
+                                    InputType.TYPE_TEXT_VARIATION_PASSWORD);
+
+                            btnConfirmPasswordDisplay.setText(getString(R.string.btnDisplay_setText_Display));
+                        } else {
+                            txtConfirmAppPassword.setInputType(InputType.TYPE_CLASS_TEXT |
+                                    InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD);
+                            btnConfirmPasswordDisplay.setText(getString(R.string.btnDisplay_setText_Hide));
+                        }
+                        txtConfirmAppPassword.setSelection(txtConfirmAppPassword.getText().length());
+                        mShowConfirmPasswordText = !mShowConfirmPasswordText;
+                    }
+                });
+
+
+                Button btnCancel = (Button) changePasswordDialog.findViewById(R.id.btnCancel);
+                // do nothing, close the dialog
+                btnCancel.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        changePasswordDialog.dismiss();
+                    }
+                });
+
+                btnSave = (Button) changePasswordDialog.findViewById(R.id.btnSave);
+                btnSave.setEnabled(false);
+                btnSave.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        String appPassword = txtAppPassword.getText().toString().trim();
+                        if (appPasswordIsValid(appPassword)) {
+                            MySettings.setAppPassword(appPassword);
+                        }
+                        Toast.makeText(getActivity(), "Password \"" + appPassword + "\" saved.", Toast.LENGTH_SHORT).show();
+                        EventBus.getDefault().post(new clsEvents.saveChangesToDropbox());
+                        changePasswordDialog.dismiss();
+                    }
+                });
+
+                changePasswordDialog.show();
         }
 
     }
 
-    private boolean isUnique(String newUserName) {
-        // TODO: Move to Main Activity ??
-        boolean result = true;
-        for (clsUsers user : mUsers) {
-            if (user.getUserName().equalsIgnoreCase(newUserName)) {
-                result = false;
-                break;
-            }
+    private boolean appPasswordIsValid(String password) {
+        boolean result = false;
+        if (!password.isEmpty()) {
+            result = true;
+        } else {
+            MainActivity.showOkDialog(getActivity(), "Invalid Password", "No password provided!");
         }
         return result;
     }
 
-    private void selectActiveUser(boolean saveToDropbox) {
+    private void validatePasswordsAreTheSame() {
+        String password = txtAppPassword.getText().toString().trim();
+        String confirmAppPassword = txtConfirmAppPassword.getText().toString().trim();
+
+        if (password.equals(confirmAppPassword) && !password.isEmpty()) {
+            btnSave.setEnabled(true);
+            ivCheckMark.setImageResource(R.drawable.btn_check_buttonless_on);
+        } else {
+            btnSave.setEnabled(false);
+            ivCheckMark.setImageResource(R.drawable.btn_check_buttonless_off);
+        }
+    }
+
+
+    private void selectActiveUser() {
         MySettings.setActiveUserID(mActiveUser.getUserID());
         updateUI();
-        if (saveToDropbox) {
+/*        if (saveToDropbox) {
             EventBus.getDefault().post(new clsEvents.saveChangesToDropbox());
-        }
+        }*/
         EventBus.getDefault().post(new clsEvents.replaceFragment(-1, MySettings.FRAG_ITEMS_LIST, false));
     }
 }

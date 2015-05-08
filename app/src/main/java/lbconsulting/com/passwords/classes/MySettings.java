@@ -2,12 +2,7 @@ package lbconsulting.com.passwords.classes;
 
 import android.content.Context;
 import android.content.SharedPreferences;
-import android.preference.PreferenceManager;
 
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
@@ -17,7 +12,6 @@ import javax.crypto.BadPaddingException;
 import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.NoSuchPaddingException;
 
-import de.greenrobot.event.EventBus;
 import lbconsulting.com.passwords.activities.MainActivity;
 import lbconsulting.com.passwords.fragments.AppPasswordFragment;
 
@@ -52,7 +46,7 @@ public class MySettings {
     public static final int MAX_NUMBER_OF_BACKUP_FILES = 5;
 
 
-    //public static final String PASSWORDS_FILENAME = "passwordsFile";
+    public static final String ARG_IS_DIRTY = "arg_isDirty";
 
     //public static final String ARG_ACTIVE_FRAGMENT = "arg_active_fragment";
     public static final int FRAG_ITEMS_LIST = 10;
@@ -112,23 +106,6 @@ public class MySettings {
         return result;
     }
 
-/*    public static void setActiveUserName(String newName) {
-        // TODO: Why do we need method setActiveUserName
-        clsUsers result = null;
-        int activeUserID = getActiveUserID();
-        if (activeUserID > 0) {
-            for (clsUsers user : MainActivity.getPasswordsData().getUsers()) {
-                if (user.getUserID() == activeUserID) {
-                    result = user;
-                }
-            }
-        }
-        if (result != null) {
-            result.setUserName(newName);
-            // TODO: Verify that saving changes to dropbox is NOT needed.
-            //EventBus.getDefault().post(new clsEvents.saveChangesToDropbox());
-        }
-    }*/
 
     public static String getDropboxFolderName() {
         SharedPreferences passwordsSavedState =
@@ -221,7 +198,6 @@ public class MySettings {
 
     public static void setAppPassword(String appPassword) {
         MyLog.i("MySettings", "setAppPassword to: " + appPassword);
-        // TODO: encrypt appPassword
 
         try {
             CryptLib mCrypt = new CryptLib();

@@ -1,6 +1,7 @@
 package lbconsulting.com.passwords.fragments;
 
 
+import android.content.Context;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
@@ -35,14 +36,15 @@ import lbconsulting.com.passwords.classes.clsPasswordItem;
  */
 public class EditCreditCardFragment extends Fragment implements TextWatcher {
 
-    private static final String ARG_IS_DIRTY = "isDirty";
+
     private static final String ARG_ACTIVE_CARD_TYPE = "activeCardType";
     private static final String ARG_CREDIT_CARD_NUMBER = "creditCardNumber";
-    private static final String ARG_PASSWORD_ITEM_ID = "passwordItemID";
     private static final String ARG_IS_NEW_PASSWORD_ITEM = "isNewPasswordItem";
 
     // fragment state variables
     private boolean mIsDirty = false;
+    private boolean mTextChangedListenersEnabled = false;
+
     private boolean mNameValidated = false;
     private String mOriginalItemName = "";
     private boolean mIsItemNameDirty = false;
@@ -52,10 +54,6 @@ public class EditCreditCardFragment extends Fragment implements TextWatcher {
     private int mSelectedCreditCardTypePosition = Spinner.INVALID_POSITION;
 
     private clsPasswordItem mPasswordItem;
-    private int maxLengthCardPart1 = 4;
-    private int maxLengthCardPart2 = 4;
-    private int maxLengthCardPart3 = 4;
-    private int maxLengthCardPart4 = 4;
 
     private EditText txtItemName;
     private Spinner spnCreditCardType;
@@ -71,7 +69,7 @@ public class EditCreditCardFragment extends Fragment implements TextWatcher {
     private EditText txtPrimaryPhoneNumber;
     private EditText txtAlternatePhoneNumber;
 
-    private boolean mTextChangedListenersEnabled = false;
+
 
 
     private class CreditCardParts {
@@ -222,7 +220,7 @@ public class EditCreditCardFragment extends Fragment implements TextWatcher {
         txtItemName.addTextChangedListener(this);
 
         spnCreditCardType = (Spinner) rootView.findViewById(R.id.spnCreditCardType);
-        final ArrayAdapter<String> dataAdapter = new ArrayAdapter<String>(getActivity(),
+        final ArrayAdapter<String> dataAdapter = new ArrayAdapter<>(getActivity(),
                 android.R.layout.simple_spinner_item, MySettings.CreditCardNames);
         dataAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         spnCreditCardType.setAdapter(dataAdapter);
@@ -237,9 +235,6 @@ public class EditCreditCardFragment extends Fragment implements TextWatcher {
                 switch (position) {
                     case MySettings.AMERICAN_EXPRESS:
                         mActiveCardType = MySettings.AMERICAN_EXPRESS;
-                        maxLengthCardPart1 = 4;
-                        maxLengthCardPart2 = 6;
-                        maxLengthCardPart3 = 5;
                         txtCreditCardPart1.setFilters(new InputFilter[]{length4Filter});
                         txtCreditCardPart2.setFilters(new InputFilter[]{length6Filter});
                         txtCreditCardPart3.setFilters(new InputFilter[]{length5Filter});
@@ -249,9 +244,6 @@ public class EditCreditCardFragment extends Fragment implements TextWatcher {
                         break;
                     case MySettings.DINERS_CLUB:
                         mActiveCardType = MySettings.DINERS_CLUB;
-                        maxLengthCardPart1 = 4;
-                        maxLengthCardPart2 = 6;
-                        maxLengthCardPart3 = 4;
                         txtCreditCardPart1.setFilters(new InputFilter[]{length4Filter});
                         txtCreditCardPart2.setFilters(new InputFilter[]{length6Filter});
                         txtCreditCardPart3.setFilters(new InputFilter[]{length4Filter});
@@ -260,9 +252,6 @@ public class EditCreditCardFragment extends Fragment implements TextWatcher {
                         tvSpacer3.setVisibility(View.GONE);
                         break;
                     default:
-                        maxLengthCardPart1 = 4;
-                        maxLengthCardPart2 = 4;
-                        maxLengthCardPart3 = 4;
                         mActiveCardType = MySettings.VISA;
                         txtCreditCardPart1.setFilters(new InputFilter[]{length4Filter});
                         txtCreditCardPart2.setFilters(new InputFilter[]{length4Filter});
@@ -382,17 +371,20 @@ public class EditCreditCardFragment extends Fragment implements TextWatcher {
         super.onActivityCreated(savedInstanceState);
         MyLog.i("EditCreditCardFragment", "onActivityCreated()");
         mTextChangedListenersEnabled = false;
-        // Restore saved state
+
         if (savedInstanceState != null) {
+            // Restore saved state
             MyLog.i("EditCreditCardFragment", "onActivityCreated(): savedInstanceState");
-            mIsDirty = savedInstanceState.getBoolean(ARG_IS_DIRTY);
+            mIsDirty = savedInstanceState.getBoolean(MySettings.ARG_IS_DIRTY);
             mActiveCardType = savedInstanceState.getInt(ARG_ACTIVE_CARD_TYPE);
             mCreditCardNumber = savedInstanceState.getString(ARG_CREDIT_CARD_NUMBER);
             mPasswordItem = MainActivity.getActivePasswordItem();
             mSelectedCreditCardTypePosition = findSpinnerPosition(mPasswordItem.getCreditCardAccountNumber());
         }
         spnCreditCardType.setSelection(mSelectedCreditCardTypePosition);
-        getActivity().getActionBar().setDisplayHomeAsUpEnabled(true);
+        if(getActivity().getActionBar()!=null) {
+            getActivity().getActionBar().setDisplayHomeAsUpEnabled(true);
+        }
         MySettings.setOnSaveInstanceState(false);
     }
 
@@ -402,7 +394,7 @@ public class EditCreditCardFragment extends Fragment implements TextWatcher {
         super.onSaveInstanceState(outState);
         MyLog.i("EditCreditCardFragment", "onSaveInstanceState()");
 
-        outState.putBoolean(ARG_IS_DIRTY, mIsDirty);
+        outState.putBoolean(MySettings.ARG_IS_DIRTY, mIsDirty);
         outState.putInt(ARG_ACTIVE_CARD_TYPE, mActiveCardType);
         outState.putString(ARG_CREDIT_CARD_NUMBER, mCreditCardNumber);
         MySettings.setOnSaveInstanceState(true);
@@ -423,8 +415,11 @@ public class EditCreditCardFragment extends Fragment implements TextWatcher {
     }
 
     private void updateUI() {
+        // inhibit text change event when loading updating the UI.
+        mTextChangedListenersEnabled = false;
+
+        // don't update if the user has made edits
         if (!mIsDirty) {
-            mTextChangedListenersEnabled = false;
             mPasswordItem = MainActivity.getActivePasswordItem();
             if (mPasswordItem != null) {
                 txtItemName.setText(mPasswordItem.getName());
@@ -443,8 +438,8 @@ public class EditCreditCardFragment extends Fragment implements TextWatcher {
                 txtPrimaryPhoneNumber.setText(formattedPrimaryPhoneNumber);
                 txtAlternatePhoneNumber.setText(formattedAlternatePhoneNumber);
             }
-            mTextChangedListenersEnabled = true;
         }
+        mTextChangedListenersEnabled = true;
     }
 
     private void updateCreditCardUI() {
@@ -512,7 +507,7 @@ public class EditCreditCardFragment extends Fragment implements TextWatcher {
                     mNameValidated = true;
                 }
                 InputMethodManager imm = (InputMethodManager) getActivity()
-                        .getSystemService(getActivity().INPUT_METHOD_SERVICE);
+                        .getSystemService(Context.INPUT_METHOD_SERVICE);
                 imm.hideSoftInputFromWindow(txtItemName.getWindowToken(), 0);
 
                 EventBus.getDefault().post(new clsEvents.PopBackStack());
@@ -593,14 +588,19 @@ public class EditCreditCardFragment extends Fragment implements TextWatcher {
             String editTextName = "";
             if (txtItemName.getText().hashCode() == s.hashCode()) {
                 editTextName = "txtItemName";
+                mIsItemNameDirty = true;
             } else if (txtCreditCardPart1.getText().hashCode() == s.hashCode()) {
                 editTextName = "txtCreditCardPart1";
+                validateCreditCard();
             } else if (txtCreditCardPart2.getText().hashCode() == s.hashCode()) {
                 editTextName = "txtCreditCardPart2";
+                validateCreditCard();
             } else if (txtCreditCardPart3.getText().hashCode() == s.hashCode()) {
                 editTextName = "txtCreditCardPart3";
+                validateCreditCard();
             } else if (txtCreditCardPart4.getText().hashCode() == s.hashCode()) {
                 editTextName = "txtCreditCardPart4";
+                validateCreditCard();
             } else if (txtExpirationMonth.getText().hashCode() == s.hashCode()) {
                 editTextName = "txtExpirationMonth";
             } else if (txtExpirationYear.getText().hashCode() == s.hashCode()) {

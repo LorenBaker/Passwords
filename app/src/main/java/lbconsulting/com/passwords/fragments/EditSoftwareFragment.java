@@ -1,6 +1,7 @@
 package lbconsulting.com.passwords.fragments;
 
 
+import android.content.Context;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
@@ -32,20 +33,21 @@ import lbconsulting.com.passwords.classes.clsPasswordItem;
  */
 public class EditSoftwareFragment extends Fragment {
 
-    private static final String ARG_IS_DIRTY = "isDirty";
     private static final String ARG_ACCOUNT_NUMBER = "accountNumber";
     private static final String ARG_IS_NEW_PASSWORD_ITEM = "isNewPasswordItem";
 
     // fragment state variables
     private boolean mIsDirty = false;
+    private boolean mTextChangedListenersEnabled = false;
+    private boolean mFlagInhibitTextChange = true;
+
     private boolean mNameValidated = false;
     private String mOriginalItemName = "";
     private boolean mIsItemNameDirty = false;
     private String mAccountNumber = "";
-    private boolean mIsNewPasswordItem = false;
 
+    private boolean mIsNewPasswordItem = false;
     private clsPasswordItem mPasswordItem;
-    private boolean mFlagInhibitTextChange = true;
 
     private EditText txtItemName;
     private EditText txtKeyCode;
@@ -109,7 +111,11 @@ public class EditSoftwareFragment extends Fragment {
 
             @Override
             public void onTextChanged(CharSequence s, int start, int before, int count) {
-                mIsItemNameDirty = true;
+                if (mTextChangedListenersEnabled) {
+                    MyLog.i("EditSoftwareFragment", "onTextChanged: txtItemName");
+                    mIsItemNameDirty = true;
+                    mIsDirty = true;
+                }
             }
 
             @Override
@@ -122,34 +128,31 @@ public class EditSoftwareFragment extends Fragment {
         txtKeyCode.addTextChangedListener(new TextWatcher() {
             @Override
             public void beforeTextChanged(CharSequence s, int start, int count, int after) {
-                if (mFlagInhibitTextChange) {
-                    return;
-                }
 
             }
 
             @Override
             public void onTextChanged(CharSequence s, int start, int before, int count) {
-                mIsDirty = true;
+                if (mTextChangedListenersEnabled) {
+                    MyLog.i("EditSoftwareFragment", "onTextChanged: txtKeyCode");
+                    mIsDirty = true;
+                }
             }
 
             @Override
             public void afterTextChanged(Editable s) {
-                if (!mFlagInhibitTextChange) {
-                    String formattedKeyCode = clsFormattingMethods
-                            .formatTypicalAccountNumber(txtKeyCode.getText().toString(), mSubgroupLength);
+                if (!mFlagInhibitTextChange && mTextChangedListenersEnabled) {
+                    String formattedKeyCode = getFormattedKeyCode();
 
                     if (!txtKeyCode.getText().toString().equals(formattedKeyCode)) {
                         txtKeyCode.setText(formattedKeyCode);
                     }
-
                 }
             }
         });
-
         spnSpacing = (Spinner) rootView.findViewById(R.id.spnSpacing);
         String[] spacing = {"2", "3", "4", "5", "6", "7", "8",};
-        final ArrayAdapter<String> dataAdapter = new ArrayAdapter<String>(getActivity(),
+        final ArrayAdapter<String> dataAdapter = new ArrayAdapter<>(getActivity(),
                 android.R.layout.simple_spinner_item, spacing);
         dataAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         spnSpacing.setAdapter(dataAdapter);
@@ -157,10 +160,18 @@ public class EditSoftwareFragment extends Fragment {
 
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-                mSubgroupLength = position + mFirstSubgroupLength;
-                mFlagInhibitTextChange = true;
-                formatKeyCode();
-                mFlagInhibitTextChange = false;
+                if (mTextChangedListenersEnabled) {
+                    // the following if statement prevents action unless initiated by the user
+                    if ((spnSpacing.getTag() != null) && ((int) spnSpacing.getTag() != position)) {
+                        MyLog.i("EditSoftwareFragment", "spnSpacing.onItemSelected");
+                        mSubgroupLength = position + mFirstSubgroupLength;
+                        mFlagInhibitTextChange = true;
+                        txtKeyCode.setText(getFormattedKeyCode());
+                        mIsDirty = true;
+                        mFlagInhibitTextChange = false;
+                    }
+                }
+                spnSpacing.setTag(position);
             }
 
             @Override
@@ -171,9 +182,9 @@ public class EditSoftwareFragment extends Fragment {
         return rootView;
     }
 
-    private void formatKeyCode() {
-        String formattedKeyCode = clsFormattingMethods.formatTypicalAccountNumber(txtKeyCode.getText().toString().trim(), mSubgroupLength);
-        txtKeyCode.setText(formattedKeyCode);
+    private String getFormattedKeyCode() {
+        return clsFormattingMethods.formatTypicalAccountNumber(
+                txtKeyCode.getText().toString().trim(), mSubgroupLength);
     }
 
     private void validateItemName() {
@@ -202,14 +213,18 @@ public class EditSoftwareFragment extends Fragment {
     public void onActivityCreated(@Nullable Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
         MyLog.i("EditSoftwareFragment", "onActivityCreated()");
+        mTextChangedListenersEnabled = false;
+
         // Restore saved state
         if (savedInstanceState != null) {
             MyLog.i("EditSoftwareFragment", "onActivityCreated(): savedInstanceState");
-            mIsDirty = savedInstanceState.getBoolean(ARG_IS_DIRTY);
+            mIsDirty = savedInstanceState.getBoolean(MySettings.ARG_IS_DIRTY);
             mAccountNumber = savedInstanceState.getString(ARG_ACCOUNT_NUMBER);
             mPasswordItem = MainActivity.getActivePasswordItem();
         }
-        getActivity().getActionBar().setDisplayHomeAsUpEnabled(true);
+        if (getActivity().getActionBar() != null) {
+            getActivity().getActionBar().setDisplayHomeAsUpEnabled(true);
+        }
         MySettings.setOnSaveInstanceState(false);
     }
 
@@ -219,7 +234,7 @@ public class EditSoftwareFragment extends Fragment {
         super.onSaveInstanceState(outState);
         MyLog.i("EditSoftwareFragment", "onSaveInstanceState()");
 
-        outState.putBoolean(ARG_IS_DIRTY, mIsDirty);
+        outState.putBoolean(MySettings.ARG_IS_DIRTY, mIsDirty);
         outState.putString(ARG_ACCOUNT_NUMBER, mAccountNumber);
         MySettings.setOnSaveInstanceState(true);
     }
@@ -239,7 +254,12 @@ public class EditSoftwareFragment extends Fragment {
     }
 
     private void updateUI() {
-        if(!mIsDirty) {
+        MyLog.i("EditSoftwareFragment", "updateUI()");
+        // inhibit text change event when loading updating the UI.
+        mTextChangedListenersEnabled = false;
+
+        // don't update if the user has made edits
+        if (!mIsDirty) {
             mPasswordItem = MainActivity.getActivePasswordItem();
             if (mPasswordItem != null) {
                 txtItemName.setText(mPasswordItem.getName());
@@ -259,6 +279,7 @@ public class EditSoftwareFragment extends Fragment {
                 mIsDirty = false;
             }
         }
+        mTextChangedListenersEnabled = true;
     }
 
     private void updatePasswordItem() {
@@ -290,7 +311,7 @@ public class EditSoftwareFragment extends Fragment {
                     mNameValidated = true;
                 }
                 InputMethodManager imm = (InputMethodManager) getActivity()
-                        .getSystemService(getActivity().INPUT_METHOD_SERVICE);
+                        .getSystemService(Context.INPUT_METHOD_SERVICE);
                 imm.hideSoftInputFromWindow(txtItemName.getWindowToken(), 0);
 
                 EventBus.getDefault().post(new clsEvents.PopBackStack());
@@ -328,10 +349,14 @@ public class EditSoftwareFragment extends Fragment {
     public void onPause() {
         super.onPause();
         MyLog.i("EditSoftwareFragment", "onPause()");
+        mTextChangedListenersEnabled = false;
+
         if (mIsDirty) {
             updatePasswordItem();
         }
-        getActivity().getActionBar().setDisplayHomeAsUpEnabled(false);
+        if (getActivity().getActionBar() != null) {
+            getActivity().getActionBar().setDisplayHomeAsUpEnabled(false);
+        }
     }
 
 

@@ -31,7 +31,6 @@ import lbconsulting.com.passwords.classes.MySettings;
 import lbconsulting.com.passwords.classes.clsEvents;
 import lbconsulting.com.passwords.classes.clsItemTypes;
 import lbconsulting.com.passwords.classes.clsPasswordItem;
-import lbconsulting.com.passwords.classes.clsUsers;
 
 /**
  * Created by Loren on 3/5/2015.

@@ -55,11 +55,7 @@ public class PasswordItemDetailFragment extends Fragment implements View.OnClick
 
 
     public static PasswordItemDetailFragment newInstance() {
-        PasswordItemDetailFragment fragment = new PasswordItemDetailFragment();
-/*        Bundle args = new Bundle();
-        args.putInt(MySettings.ARG_ITEM_ID, itemID);
-        fragment.setArguments(args);*/
-        return fragment;
+        return new PasswordItemDetailFragment();
     }
 
     /**
@@ -123,7 +119,7 @@ public class PasswordItemDetailFragment extends Fragment implements View.OnClick
         });
 
 
-       // updateUI();
+        // updateUI();
         return rootView;
 
     }
@@ -132,10 +128,8 @@ public class PasswordItemDetailFragment extends Fragment implements View.OnClick
         MyLog.i("PasswordItemDetailFragment", "updateUI");
         // inhibit text change event when loading updating the UI.
         mTextChangedListenersEnabled = false;
-        mPasswordItem = MainActivity.getActivePasswordItem();
-
-        if (mPasswordItem != null) {
-
+        if (!mIsDirty) {
+            mPasswordItem = MainActivity.getActivePasswordItem();
             // fill the UI views
             tvPasswordItemName.setText(mPasswordItem.getName());
             tvItemDetail.setText(mPasswordItem.getItemDetail());
@@ -199,9 +193,8 @@ public class PasswordItemDetailFragment extends Fragment implements View.OnClick
                 btnCallAlternate.setVisibility(View.VISIBLE);
                 btnCallPrimary.setVisibility(View.VISIBLE);
             }
-
-            mTextChangedListenersEnabled = true;
         }
+        mTextChangedListenersEnabled = true;
     }
 
     @Override
@@ -209,6 +202,12 @@ public class PasswordItemDetailFragment extends Fragment implements View.OnClick
         super.onActivityCreated(savedInstanceState);
         MyLog.i("PasswordItemDetailFragment", "onActivityCreated()");
         mTextChangedListenersEnabled = false;
+
+        if (savedInstanceState != null) {
+            MyLog.i("EditCreditCardFragment", "onActivityCreated(): savedInstanceState");
+            mIsDirty = savedInstanceState.getBoolean(MySettings.ARG_IS_DIRTY);
+        }
+
         if (getActivity().getActionBar() != null) {
             getActivity().getActionBar().setDisplayHomeAsUpEnabled(true);
         }
@@ -219,6 +218,7 @@ public class PasswordItemDetailFragment extends Fragment implements View.OnClick
     public void onSaveInstanceState(Bundle outState) {
         super.onSaveInstanceState(outState);
         MyLog.i("PasswordItemDetailFragment", "onSaveInstanceState()");
+        outState.putBoolean(MySettings.ARG_IS_DIRTY, mIsDirty);
         MySettings.setOnSaveInstanceState(true);
     }
 

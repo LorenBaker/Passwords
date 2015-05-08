@@ -65,7 +65,6 @@ import lbconsulting.com.passwords.fragments.UserSettingsFragment;
 
 
 public class MainActivity extends FragmentActivity {
-    // TODO: Look at menu item order
     // TODO: What happens if remote user deletes a passwords item that is currently being edited?
 
 
@@ -724,8 +723,12 @@ public class MainActivity extends FragmentActivity {
         if (mPasswordsData != null) {
             clsUsers activeUser = mPasswordsData.getUser(MySettings.getActiveUserID());
             if (activeUser != null) {
-                // TODO: Implement plurals
-                setActionBarTitle(activeUser.getUserName() + "'s Passwords");
+                String userName = activeUser.getUserName();
+                if(userName.endsWith("s")){
+                    setActionBarTitle(activeUser.getUserName() + "' Passwords");
+                }else{
+                    setActionBarTitle(activeUser.getUserName() + "'s Passwords");
+                }
             }
         }
     }
@@ -943,7 +946,6 @@ public class MainActivity extends FragmentActivity {
                     if (!status.isLatest) {
                         // There must have been a change while writing the file
                         // so read the latest file
-                        // TODO: verify that reading data works
                         MyLog.d("MainActivity", "saveEncryptedData: Changes were made " +
                                 "to the data file while writing file. Start readData()");
                         readData();

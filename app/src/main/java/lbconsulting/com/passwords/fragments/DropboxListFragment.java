@@ -43,24 +43,20 @@ import lbconsulting.com.passwords.classes.clsEvents;
 public class DropboxListFragment extends Fragment
         implements View.OnClickListener, AdapterView.OnItemClickListener {
 
-    //<editor-fold desc="Fragment Views">
+
     private TextView tvFolderName;
     //private TextView tvFolderPath;
     private ListView lvFolders;
     private Button btnCancel;
     private Button btnSelect;
-    //</editor-fold>
 
 
-    //<editor-fold desc="Module Variables">
     private static DbxFileSystem dbxFs;
     private ArrayList<clsDbxFolder> mDropboxFolders;
     private DropboxFoldersListViewAdapter mDropboxFoldersAdapter;
 
-    private String mFolderPath = "";
+    //private String mFolderPath = "";
     private DbxPath mActivePath;
-
-    //</editor-fold>
 
 
     public DropboxListFragment() {
@@ -68,8 +64,7 @@ public class DropboxListFragment extends Fragment
     }
 
     public static DropboxListFragment newInstance() {
-        DropboxListFragment fragment = new DropboxListFragment();
-        return fragment;
+        return new DropboxListFragment();
     }
 
     @Override
@@ -84,7 +79,9 @@ public class DropboxListFragment extends Fragment
     public void onActivityCreated(@Nullable Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
         MyLog.i("DropboxListFragment", "onActivityCreated()");
-        getActivity().getActionBar().setDisplayHomeAsUpEnabled(true);
+        if(getActivity().getActionBar()!=null) {
+            getActivity().getActionBar().setDisplayHomeAsUpEnabled(true);
+        }
         dbxFs = MainActivity.getDbxFs();
         MySettings.setOnSaveInstanceState(false);
     }
@@ -135,7 +132,7 @@ public class DropboxListFragment extends Fragment
                     DbxPath parentPath = null;
                     if (path.getName().isEmpty()) {
                         tvFolderName.setText(clsDbxFolder.DROPBOX_TEXT);
-                        mFolderPath = "/";
+                        //mFolderPath = "/";
                     } else {
                         try {
                             parentPath = path.getParent();
@@ -147,7 +144,7 @@ public class DropboxListFragment extends Fragment
                             mDropboxFolders.add(0, position0);
                         }
                         tvFolderName.setText(path.getName());
-                        mFolderPath = getFullFolderPath(path);
+                        //mFolderPath = getFullFolderPath(path);
                         //tvFolderPath.setText(getFullFolderPath(path));
                     }
 
@@ -205,7 +202,9 @@ public class DropboxListFragment extends Fragment
     public void onPause() {
         super.onPause();
         MyLog.i("DropboxListFragment", "onPause()");
-        getActivity().getActionBar().setDisplayHomeAsUpEnabled(false);
+        if(getActivity().getActionBar()!=null) {
+            getActivity().getActionBar().setDisplayHomeAsUpEnabled(false);
+        }
     }
 
     @Override

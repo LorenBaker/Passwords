@@ -1,6 +1,7 @@
 package lbconsulting.com.passwords.fragments;
 
 
+import android.content.Context;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
@@ -27,14 +28,15 @@ import lbconsulting.com.passwords.classes.clsPasswordItem;
 /**
  * A fragment that allows the editing of a Credit Card
  */
-public class EditGeneralAccountFragment extends Fragment {
+public class EditGeneralAccountFragment extends Fragment implements TextWatcher {
 
-    private static final String ARG_IS_DIRTY = "isDirty";
     private static final String ARG_ACCOUNT_NUMBER = "accountNumber";
     private static final String ARG_IS_NEW_PASSWORD_ITEM = "isNewPasswordItem";
 
     // fragment state variables
     private boolean mIsDirty = false;
+    private boolean mTextChangedListenersEnabled = false;
+    
     private boolean mNameValidated = false;
     private String mOriginalItemName = "";
     private boolean mIsItemNameDirty = false;
@@ -94,42 +96,10 @@ public class EditGeneralAccountFragment extends Fragment {
                 }
             }
         });
-
-        txtItemName.addTextChangedListener(new TextWatcher() {
-
-            @Override
-            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
-
-            }
-
-            @Override
-            public void onTextChanged(CharSequence s, int start, int before, int count) {
-                mIsItemNameDirty = true;
-            }
-
-            @Override
-            public void afterTextChanged(Editable s) {
-
-            }
-        });
+        txtItemName.addTextChangedListener(this);
 
         txtAccountNumber = (EditText) rootView.findViewById(R.id.txtKeyCode);
-        txtAccountNumber.addTextChangedListener(new TextWatcher() {
-            @Override
-            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
-
-            }
-
-            @Override
-            public void onTextChanged(CharSequence s, int start, int before, int count) {
-                mIsDirty = true;
-            }
-
-            @Override
-            public void afterTextChanged(Editable s) {
-
-            }
-        });
+        txtAccountNumber.addTextChangedListener(this);
 
         txtPrimaryPhoneNumber = (EditText) rootView.findViewById(R.id.txtPrimaryPhoneNumber);
         txtPrimaryPhoneNumber.setOnFocusChangeListener(new View.OnFocusChangeListener() {
@@ -143,22 +113,8 @@ public class EditGeneralAccountFragment extends Fragment {
                 }
             }
         });
-        txtPrimaryPhoneNumber.addTextChangedListener(new TextWatcher() {
-            @Override
-            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+        txtPrimaryPhoneNumber.addTextChangedListener(this);
 
-            }
-
-            @Override
-            public void onTextChanged(CharSequence s, int start, int before, int count) {
-                mIsDirty = true;
-            }
-
-            @Override
-            public void afterTextChanged(Editable s) {
-
-            }
-        });
         txtAlternatePhoneNumber = (EditText) rootView.findViewById(R.id.txtAlternatePhoneNumber);
         txtAlternatePhoneNumber.setOnFocusChangeListener(new View.OnFocusChangeListener() {
 
@@ -171,22 +127,8 @@ public class EditGeneralAccountFragment extends Fragment {
                 }
             }
         });
-        txtAlternatePhoneNumber.addTextChangedListener(new TextWatcher() {
-            @Override
-            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+        txtAlternatePhoneNumber.addTextChangedListener(this);
 
-            }
-
-            @Override
-            public void onTextChanged(CharSequence s, int start, int before, int count) {
-                mIsDirty = true;
-            }
-
-            @Override
-            public void afterTextChanged(Editable s) {
-
-            }
-        });
         return rootView;
     }
 
@@ -221,14 +163,18 @@ public class EditGeneralAccountFragment extends Fragment {
     public void onActivityCreated(@Nullable Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
         MyLog.i("EditGeneralAccountFragment", "onActivityCreated()");
+        mTextChangedListenersEnabled = false;
+
         // Restore saved state
         if (savedInstanceState != null) {
             MyLog.i("EditGeneralAccountFragment", "onActivityCreated(): savedInstanceState");
-            mIsDirty = savedInstanceState.getBoolean(ARG_IS_DIRTY);
+            mIsDirty = savedInstanceState.getBoolean(MySettings.ARG_IS_DIRTY);
             mAccountNumber = savedInstanceState.getString(ARG_ACCOUNT_NUMBER);
             mPasswordItem = MainActivity.getActivePasswordItem();
         }
-        getActivity().getActionBar().setDisplayHomeAsUpEnabled(true);
+        if(getActivity().getActionBar()!=null) {
+            getActivity().getActionBar().setDisplayHomeAsUpEnabled(true);
+        }
         MySettings.setOnSaveInstanceState(false);
     }
 
@@ -238,7 +184,7 @@ public class EditGeneralAccountFragment extends Fragment {
         super.onSaveInstanceState(outState);
         MyLog.i("EditGeneralAccountFragment", "onSaveInstanceState()");
 
-        outState.putBoolean(ARG_IS_DIRTY, mIsDirty);
+        outState.putBoolean(MySettings.ARG_IS_DIRTY, mIsDirty);
         outState.putString(ARG_ACCOUNT_NUMBER, mAccountNumber);
         MySettings.setOnSaveInstanceState(true);
     }
@@ -258,6 +204,10 @@ public class EditGeneralAccountFragment extends Fragment {
     }
 
     private void updateUI() {
+        // inhibit text change event when loading updating the UI.
+        mTextChangedListenersEnabled = false;
+
+        // don't update if the user has made edits
         if (!mIsDirty) {
             if (mPasswordItem == null) {
                 mPasswordItem = MainActivity.getActivePasswordItem();
@@ -276,6 +226,7 @@ public class EditGeneralAccountFragment extends Fragment {
                 txtAlternatePhoneNumber.setText(formattedAlternatePhoneNumber);
             }
         }
+        mTextChangedListenersEnabled = true;
     }
 
     private void updatePasswordItem() {
@@ -317,7 +268,7 @@ public class EditGeneralAccountFragment extends Fragment {
                     mNameValidated = true;
                 }
                 InputMethodManager imm = (InputMethodManager) getActivity()
-                        .getSystemService(getActivity().INPUT_METHOD_SERVICE);
+                        .getSystemService(Context.INPUT_METHOD_SERVICE);
                 imm.hideSoftInputFromWindow(txtItemName.getWindowToken(), 0);
 
                 EventBus.getDefault().post(new clsEvents.PopBackStack());
@@ -357,10 +308,14 @@ public class EditGeneralAccountFragment extends Fragment {
     public void onPause() {
         super.onPause();
         MyLog.i("EditGeneralAccountFragment", "onPause()");
+        mTextChangedListenersEnabled = false;
+
         if (mIsDirty) {
             updatePasswordItem();
         }
-        getActivity().getActionBar().setDisplayHomeAsUpEnabled(false);
+        if(getActivity().getActionBar()!=null) {
+            getActivity().getActionBar().setDisplayHomeAsUpEnabled(false);
+        }
     }
 
 
@@ -374,4 +329,33 @@ public class EditGeneralAccountFragment extends Fragment {
     }
 
 
+    @Override
+    public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+
+    }
+
+    @Override
+    public void onTextChanged(CharSequence s, int start, int before, int count) {
+        if (mTextChangedListenersEnabled) {
+            String editTextName = "";
+            if (txtItemName.getText().hashCode() == s.hashCode()) {
+                editTextName = "txtItemName";
+                mIsItemNameDirty = true;
+            } else if (txtAccountNumber.getText().hashCode() == s.hashCode()) {
+                editTextName = "txtAccountNumber";
+            } else if (txtPrimaryPhoneNumber.getText().hashCode() == s.hashCode()) {
+                editTextName = "txtPrimaryPhoneNumber";
+            } else if (txtAlternatePhoneNumber.getText().hashCode() == s.hashCode()) {
+                editTextName = "txtAlternatePhoneNumber";
+            }
+
+            MyLog.d("EditGeneralAccountFragment", "onTextChanged: EditText = " + editTextName);
+            mIsDirty = true;
+        }
+    }
+
+    @Override
+    public void afterTextChanged(Editable s) {
+        
+    }
 }

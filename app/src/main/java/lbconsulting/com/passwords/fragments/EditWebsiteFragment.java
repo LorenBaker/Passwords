@@ -1,6 +1,7 @@
 package lbconsulting.com.passwords.fragments;
 
 
+import android.content.Context;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
@@ -28,16 +29,15 @@ import lbconsulting.com.passwords.classes.clsPasswordItem;
  */
 public class EditWebsiteFragment extends Fragment implements TextWatcher {
 
-    private static final String ARG_IS_DIRTY = "isDirty";
-    //private static final String ARG_ACCOUNT_NUMBER = "accountNumber";
     private static final String ARG_IS_NEW_PASSWORD_ITEM = "isNewPasswordItem";
 
     // fragment state variables
     private boolean mIsDirty = false;
+    private boolean mTextChangedListenersEnabled = false;
+    private boolean mIsItemNameDirty = false;
+
     private boolean mNameValidated = false;
     private String mOriginalItemName = "";
-    private boolean mIsItemNameDirty = false;
-    private String mWebsiteURL = "";
     private boolean mIsNewPasswordItem = false;
 
     private clsPasswordItem mPasswordItem;
@@ -82,23 +82,6 @@ public class EditWebsiteFragment extends Fragment implements TextWatcher {
         View rootView = inflater.inflate(R.layout.frag_edit_website, container, false);
 
         txtItemName = (EditText) rootView.findViewById(R.id.txtItemName);
-        txtItemName.addTextChangedListener(new TextWatcher() {
-
-            @Override
-            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
-
-            }
-
-            @Override
-            public void onTextChanged(CharSequence s, int start, int before, int count) {
-                mIsItemNameDirty = true;
-            }
-
-            @Override
-            public void afterTextChanged(Editable s) {
-
-            }
-        });
         txtItemName.setOnFocusChangeListener(new View.OnFocusChangeListener() {
 
             @Override
@@ -110,6 +93,7 @@ public class EditWebsiteFragment extends Fragment implements TextWatcher {
                 }
             }
         });
+        txtItemName.addTextChangedListener(this);
 
         txtWebsiteURL = (EditText) rootView.findViewById(R.id.txtWebsiteURL);
         txtWebsiteURL.addTextChangedListener(this);
@@ -147,13 +131,17 @@ public class EditWebsiteFragment extends Fragment implements TextWatcher {
     public void onActivityCreated(@Nullable Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
         MyLog.i("EditWebsiteFragment", "onActivityCreated()");
+        mTextChangedListenersEnabled = false;
+
         // Restore saved state
         if (savedInstanceState != null) {
             MyLog.i("EditWebsiteFragment", "onActivityCreated(): savedInstanceState");
-            mIsDirty = savedInstanceState.getBoolean(ARG_IS_DIRTY);
+            mIsDirty = savedInstanceState.getBoolean(MySettings.ARG_IS_DIRTY);
             mPasswordItem = MainActivity.getActivePasswordItem();
         }
-        getActivity().getActionBar().setDisplayHomeAsUpEnabled(true);
+        if (getActivity().getActionBar() != null) {
+            getActivity().getActionBar().setDisplayHomeAsUpEnabled(true);
+        }
         MySettings.setOnSaveInstanceState(false);
     }
 
@@ -162,7 +150,7 @@ public class EditWebsiteFragment extends Fragment implements TextWatcher {
     public void onSaveInstanceState(Bundle outState) {
         super.onSaveInstanceState(outState);
         MyLog.i("EditWebsiteFragment", "onSaveInstanceState()");
-        outState.putBoolean(ARG_IS_DIRTY, mIsDirty);
+        outState.putBoolean(MySettings.ARG_IS_DIRTY, mIsDirty);
         MySettings.setOnSaveInstanceState(true);
     }
 
@@ -181,19 +169,23 @@ public class EditWebsiteFragment extends Fragment implements TextWatcher {
     }
 
     private void updateUI() {
-        if(!mIsDirty) {
+        // inhibit text change event when loading updating the UI.
+        mTextChangedListenersEnabled = false;
+
+        // don't update if the user has made edits
+        if (!mIsDirty) {
             mPasswordItem = MainActivity.getActivePasswordItem();
             if (mPasswordItem != null) {
                 txtItemName.setText(mPasswordItem.getName());
                 if (mOriginalItemName.isEmpty()) {
                     mOriginalItemName = mPasswordItem.getName();
                 }
-
                 txtWebsiteURL.setText((mPasswordItem.getWebsiteURL()));
                 txtUserID.setText((mPasswordItem.getWebsiteUserID()));
                 txtPassword.setText((mPasswordItem.getWebsitePassword()));
             }
         }
+        mTextChangedListenersEnabled = true;
     }
 
     private void updatePasswordItem() {
@@ -233,7 +225,7 @@ public class EditWebsiteFragment extends Fragment implements TextWatcher {
                     mNameValidated = true;
                 }
                 InputMethodManager imm = (InputMethodManager) getActivity()
-                        .getSystemService(getActivity().INPUT_METHOD_SERVICE);
+                        .getSystemService(Context.INPUT_METHOD_SERVICE);
                 imm.hideSoftInputFromWindow(txtItemName.getWindowToken(), 0);
 
                 EventBus.getDefault().post(new clsEvents.PopBackStack());
@@ -271,12 +263,15 @@ public class EditWebsiteFragment extends Fragment implements TextWatcher {
 
     @Override
     public void onPause() {
+        mTextChangedListenersEnabled = false;
         super.onPause();
         MyLog.i("EditWebsiteFragment", "onPause()");
         if (mIsDirty) {
             updatePasswordItem();
         }
-        getActivity().getActionBar().setDisplayHomeAsUpEnabled(false);
+        if(getActivity().getActionBar()!=null) {
+            getActivity().getActionBar().setDisplayHomeAsUpEnabled(false);
+        }
     }
 
 
@@ -295,7 +290,22 @@ public class EditWebsiteFragment extends Fragment implements TextWatcher {
 
     @Override
     public void onTextChanged(CharSequence s, int start, int before, int count) {
-        mIsDirty = true;
+        if (mTextChangedListenersEnabled) {
+            String editTextName = "";
+            if (txtItemName.getText().hashCode() == s.hashCode()) {
+                editTextName = "txtItemName";
+                mIsItemNameDirty = true;
+            } else if (txtWebsiteURL.getText().hashCode() == s.hashCode()) {
+                editTextName = "txtWebsiteURL";
+            } else if (txtUserID.getText().hashCode() == s.hashCode()) {
+                editTextName = "txtUserID";
+            } else if (txtPassword.getText().hashCode() == s.hashCode()) {
+                editTextName = "txtPassword";
+            }
+
+            MyLog.d("EditWebsiteFragment", "onTextChanged: EditText = " + editTextName);
+            mIsDirty = true;
+        }
     }
 
     @Override

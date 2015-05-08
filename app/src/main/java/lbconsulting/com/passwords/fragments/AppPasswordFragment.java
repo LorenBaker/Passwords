@@ -12,6 +12,7 @@ import android.text.InputType;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.AutoCompleteTextView;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ProgressBar;
@@ -35,11 +36,11 @@ public class AppPasswordFragment extends Fragment implements View.OnClickListene
 
     // fragment state variables
     private static final String ARG_IS_CHANGING_PASSWORD = "isChangingPassword";
-    private boolean mIsChangingPassword = false;
     private boolean mShowPasswordText = false;
     private clsUsers mActiveUser;
 
     private ProgressBar progressBar;
+    private TextView tvProgressBarCaption;
     private TextView tvFirstTimeMessage;
     private Button btnCreateNewUser;
     private Button btnSelectUser;
@@ -54,7 +55,7 @@ public class AppPasswordFragment extends Fragment implements View.OnClickListene
     private static final int STATE_STEP_2 = 20;
     private static final int STATE_STEP_2a = 21;
     private static final int STATE_STEP_3a = 31;
-    private static final int STATE_STEP_2b = 22;
+    //private static final int STATE_STEP_2b = 22;
     private static final int STATE_STEP_3b = 32;
     private static final int STATE_PASSWORD_ONLY = 40;
     private int mState = STATE_STEP_0;
@@ -78,10 +79,6 @@ public class AppPasswordFragment extends Fragment implements View.OnClickListene
         super.onCreate(savedInstanceState);
         MyLog.i("AppPasswordFragment", "onCreate()");
 
-        if (getArguments() != null) {
-            mIsChangingPassword = getArguments().getBoolean(ARG_IS_CHANGING_PASSWORD);
-        }
-
         EventBus.getDefault().register(this);
 
     }
@@ -93,6 +90,7 @@ public class AppPasswordFragment extends Fragment implements View.OnClickListene
         View rootView = inflater.inflate(R.layout.frag_app_password, container, false);
         // TODO: Add caption TextView for progressBar
         progressBar = (ProgressBar) rootView.findViewById(R.id.progressBar);
+        tvProgressBarCaption = (TextView) rootView.findViewById(R.id.tvProgressBarCaption);
 
         tvFirstTimeMessage = (TextView) rootView.findViewById(R.id.tvFirstTimeMessage);
 
@@ -140,7 +138,8 @@ public class AppPasswordFragment extends Fragment implements View.OnClickListene
 
     private void updateUI() {
         // TODO: Remove "Test Password"
-        txtAppPassword.setText("GoBeavers1972");
+        txtAppPassword.setText("");
+
         showButtonText();
 
         switch (mState) {
@@ -377,11 +376,10 @@ public class AppPasswordFragment extends Fragment implements View.OnClickListene
                 newUserDialog.setTitle("Enter New User Name");
                 newUserDialog.setMessage("");
 
-                // TODO: Make EditText work like the App's other EditText boxes
                 // Set an EditText view to get user input
-                final EditText input = new EditText(getActivity());
+                final EditText input = new EditText (getActivity());
                 input.setHint("New User Name");
-                input.setInputType(InputType.TYPE_TEXT_FLAG_CAP_WORDS);
+                input.setInputType(InputType.TYPE_CLASS_TEXT|InputType.TYPE_TEXT_FLAG_AUTO_CORRECT|InputType.TYPE_TEXT_FLAG_CAP_WORDS);
                 newUserDialog.setView(input);
 
                 newUserDialog.setPositiveButton("OK", new DialogInterface.OnClickListener() {
@@ -395,7 +393,7 @@ public class AppPasswordFragment extends Fragment implements View.OnClickListene
                             MySettings.setActiveUserID(newUserID);
                             // Save new user
                             EventBus.getDefault().post(new clsEvents.saveChangesToDropbox());
-                           // MySettings.setActiveUserName(newUserName);
+                            // MySettings.setActiveUserName(newUserName);
                             MainActivity.addNewUser(mActiveUser);
                             updateUI();
                             dialog.dismiss();
@@ -448,12 +446,11 @@ public class AppPasswordFragment extends Fragment implements View.OnClickListene
                     builder.setTitle(getString(R.string.btnSelectUser_dialog_setTitle));
                     builder.setSingleChoiceItems(names, selectedUserPosition, new DialogInterface.OnClickListener() {
                         public void onClick(DialogInterface dialog, int item) {
-                            mActiveUser = users.get(item);
-                            MySettings.setActiveUserID(mActiveUser.getUserID());
-                            // TODO: btnSelectUser; Verify that setActiveUserName is needed?
-                            //MySettings.setActiveUserName(mActiveUser.getUserName());
-                            // MySettings.setAppPasswordState(STATE_PASSWORD_ONLY);
-                            updateUI();
+                            if (users != null) {
+                                mActiveUser = users.get(item);
+                                MySettings.setActiveUserID(mActiveUser.getUserID());
+                                updateUI();
+                            }
                             dialog.dismiss();
                         }
                     });
@@ -533,12 +530,10 @@ public class AppPasswordFragment extends Fragment implements View.OnClickListene
         } else {
             MainActivity.showOkDialog(getActivity(), "Invalid Password", "No password provided!");
         }
-        // TODO: add more app password validation rules ??
         return result;
     }
 
     private boolean isUnique(String newUserName) {
-        // TODO: Move to Main Activity ??
         boolean result = true;
         if (MainActivity.getPasswordsData() != null) {
             for (clsUsers user : MainActivity.getPasswordsData().getUsers()) {
@@ -553,6 +548,8 @@ public class AppPasswordFragment extends Fragment implements View.OnClickListene
 
     private void showProgressBar() {
         progressBar.setVisibility(View.VISIBLE);
+        tvProgressBarCaption.setVisibility(View.VISIBLE);
+
         tvFirstTimeMessage.setVisibility(View.GONE);
 
         btnCreateNewUser.setVisibility(View.GONE);
@@ -598,6 +595,7 @@ public class AppPasswordFragment extends Fragment implements View.OnClickListene
 
     private void showPasswordOnly() {
         progressBar.setVisibility(View.GONE);
+        tvProgressBarCaption.setVisibility(View.GONE);
 
         tvFirstTimeMessage.setVisibility(View.GONE);
 
@@ -616,6 +614,7 @@ public class AppPasswordFragment extends Fragment implements View.OnClickListene
     private void showStep1_StartUpViews() {
         // Select Dropbox folder
         progressBar.setVisibility(View.GONE);
+        tvProgressBarCaption.setVisibility(View.GONE);
 
         tvFirstTimeMessage.setVisibility(View.VISIBLE);
         tvFirstTimeMessage.setText(getResources().getString(R.string.tvFirstTimeMessage_text_Step1));
@@ -634,6 +633,7 @@ public class AppPasswordFragment extends Fragment implements View.OnClickListene
     private void showStep2a_StartUpViews() {
         // Get password from user
         progressBar.setVisibility(View.GONE);
+        tvProgressBarCaption.setVisibility(View.GONE);
 
         tvFirstTimeMessage.setVisibility(View.VISIBLE);
         tvFirstTimeMessage.setText(getResources().getString(R.string.tvFirstTimeMessage_text_Step2a));
@@ -652,6 +652,7 @@ public class AppPasswordFragment extends Fragment implements View.OnClickListene
     private void showStep3a_StartUpViews() {
         // Select User
         progressBar.setVisibility(View.GONE);
+        tvProgressBarCaption.setVisibility(View.GONE);
 
         tvFirstTimeMessage.setVisibility(View.VISIBLE);
         tvFirstTimeMessage.setText(getResources().getString(R.string.tvFirstTimeMessage_text_Step3a));
@@ -670,6 +671,7 @@ public class AppPasswordFragment extends Fragment implements View.OnClickListene
     private void showStep2b_StartUpViews() {
         // Create new user
         progressBar.setVisibility(View.GONE);
+        tvProgressBarCaption.setVisibility(View.GONE);
 
         tvFirstTimeMessage.setVisibility(View.VISIBLE);
         tvFirstTimeMessage.setText(getResources().getString(R.string.tvFirstTimeMessage_text_Step2b));
@@ -688,6 +690,7 @@ public class AppPasswordFragment extends Fragment implements View.OnClickListene
     private void showStep3b_StartUpViews() {
         // Get password from user
         progressBar.setVisibility(View.GONE);
+        tvProgressBarCaption.setVisibility(View.GONE);
 
         tvFirstTimeMessage.setVisibility(View.VISIBLE);
         tvFirstTimeMessage.setText(getResources().getString(R.string.tvFirstTimeMessage_text_Step3b));
@@ -707,14 +710,14 @@ public class AppPasswordFragment extends Fragment implements View.OnClickListene
 
         if (mActiveUser != null) {
             btnSelectUser.setText(getString(R.string.btnSelectUser_text) + mActiveUser.getUserName());
-        } else{
-            btnSelectUser.setText(getString(R.string.btnSelectUser_text) +"User Not Selected");
+        } else {
+            btnSelectUser.setText(getString(R.string.btnSelectUser_text) + "User Not Selected");
         }
         btnSelectDropboxFolder.setText(getString(R.string.btnSelectDropboxFolder_setText)
                 + MySettings.getDropboxFolderName());
     }
 
-    public static class waitForFirstSync extends AsyncTask<Void, Void, Void> {
+    private static class waitForFirstSync extends AsyncTask<Void, Void, Void> {
         @Override
         protected void onPreExecute() {
             super.onPreExecute();
